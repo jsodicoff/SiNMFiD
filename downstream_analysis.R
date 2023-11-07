@@ -3,27 +3,6 @@
 #'
 #' @param filepath Path to directory within which the atlas structure was generated
 #' @param region A string corresponding to the name of an anatomical region
-#' @param spatial.data.name A string, the name of the spatial dataset
-#'
-#' @return nothing
-#'
-#' @import
-#'
-#' @export
-#' @examples
-#' \dontrun{
-#'
-#' }
-
-
-
-
-
-#' Convert proportions generated during the deconvolution into cell-type
-#' assignments, for use with single cell spatial modalities (i.e. slideseq)
-#'
-#' @param filepath Path to directory within which the atlas structure was generated
-#' @param region A string corresponding to the name of an anatomical region
 #' @param layer.list A named list of spatial sample names, corresponding to
 #'    groupings to be summarized by the function
 #' @param spatial.data.name A string, the name of the spatial dataset
@@ -636,4 +615,96 @@ calculate_wasserstein = function(
                     units = "px")
   }
   
+}
+
+describe_voxelized_loading_by_label = function(filepath,
+                              region,
+                              spatial.data.name,
+                              rand.seed = 123,
+                              clusters.from.atlas = TRUE,
+                              naive.clusters = FALSE,
+                              mat.use = "raw",
+                              labels.use){
+  set.seed(rand.seed)
+
+  descriptor = as.character(rand.seed)
+  if(clusters.from.atlas){
+    descriptor = paste0(descriptor, "_object_clusters")
+  }
+  if(naive.clusters){
+    descriptor = paste0(descriptor, "_naive")
+    spatial.data.name = paste0(spatial.data.name, "_naive")
+  }
+  
+  dir_spatial = paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/",spatial.data.name)
+  
+  
+  voxels_to_samples = readRDS(paste0(dir_spatial, "/",spatial.data.name,"_voxels_to_samples.RDS"))
+  raw_loadings = readRDS(paste0(dir_spatial, "/deconvolution_output_",descriptor,".RDS"))[[mat.use]]
+  
+  unique_labels = unique(labels.use)
+  
+  voxel_in_subregion = sapply(unique_labels, function(unique_label){
+    sapply(names(voxels_to_samples), function(voxel_to_sample){
+      any(labels.use[voxels_to_samples[[voxel_to_sample]]] %in% unique_label)
+    })
+  })
+  
+  colnames(voxel_in_subregion) = unique_labels
+  rownames(voxel_in_subregion) = names(voxels_to_samples)
+  
+  voxel_in_subregion = voxel_in_subregion[rownames(voxel_in_subregion) %in% rownames(raw_loadings),]
+  
+  
+  proportion_loading_in_subregion = sapply(unique_labels, function(subregion){
+    sapply(colnames(raw_loadings), function(cell_type){
+      sum(raw_loadings[voxel_in_subregion[,subregion],cell_type])/sum(raw_loadings[,cell_type])
+    })
+  })
+  
+  saveRDS(proportion_loading_in_subregion, paste0(dir_spatial, "/",descriptor,"_output/cell_type_loading_by_label_",mat.use,".RDS"))
+}
+
+summarize_subregions = function(regions, ontology.file = "Downloads/allen_structure_ontology.csv", return = F){
+  allen_structure = read.csv(ontology.file,header=T)
+  allen_structure_list = lapply(allen_structure$structure_id_path, function(x){strsplit(x, "/")}[[1]])
+  
+  subregion_vec = vector(mode = "character")
+  for(region in regions){
+    message(region)
+    sub_allen = allen_structure[allen_structure$acronym == region, ]
+    if(nrow(sub_allen)>1){
+      id = sub_allen$id[which.max(sub_allen$depth)]
+    } else {
+      id = sub_allen$id[1]
+    }
+    if(length(id) != 0){
+      subregions = allen_structure[sapply(allen_structure_list, function(x){id %in% x}) & grepl(region, allen_structure$acronym),]
+      print(subregions[,c("acronym","name")])
+      subregion_vec = c(subregion_vec, subregions[,"acronym"])
+    } else {
+      message("No subregions!")
+    }
+  }
+  if(return){
+    return(unique(subregion_vec))
+  }
+}
+
+summarize_clusters = function(filepath,
+                             region,
+                             rand.seed,
+                             naive = FALSE,
+                             return = FALSE){
+  deconv_dir = paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/")
+  if(naive){
+    clusts = readRDS(paste0(deconv_dir, "clusters_", rand.seed,"_object_clusters_naive.RDS"))
+  } else {
+    clusts = readRDS(paste0(deconv_dir, "clusters_", rand.seed,"_object_clusters.RDS"))
+  }
+  message(paste0(region, " cluster frequency"))
+  print(table(clusts))
+  if(return){
+    return(levels(clusts))
+  }
 }
