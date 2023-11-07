@@ -248,3 +248,91 @@ qc_spatial_data = function(
 
 
 
+register_voxel_to_label = function(filepath,
+                              region,
+                              spatial.data.name,
+                              labels.use,
+                              label.name){
+
+    dir_spatial = paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/",spatial.data.name)
+
+
+    voxels_to_samples = readRDS(paste0(dir_spatial, "/",spatial.data.name,"_voxels_to_samples.RDS"))
+  
+    unique_labels = unique(labels.use)
+
+    voxel_to_subregion = sapply(unique_labels, function(unique_label){
+      label_counts = sapply(names(voxels_to_samples), function(voxel_to_sample){
+        sum(labels.use[voxels_to_samples[[voxel_to_sample]]] %in% unique_label)
+      })
+      return(unique_label[which.max(label_counts)])
+    })
+  
+    names(voxel_to_subregion) = names(voxels_to_samples)
+  
+    saveRDS(proportion_loading_in_subregion, paste0(dir_spatial, "/voxel_assignment_by_label_",label.name,".RDS"))
+  }
+
+mirror_spatial_coords = function(filepath,
+                              region,
+                              spatial.data.name,
+                              axes.flip = c(FALSE,FALSE,FALSE),
+                              overwrite = T){
+  deconv_dir = paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/")
+  coords = readRDS(paste0(deconv_dir,spatial.data.name,"/",spatial.data.name,"_coords.RDS"))
+  
+  descriptor = "mirror"
+  axis_des = c("_x","_y", "_z")
+
+  for(i in 1:3){
+    if(axes.flip[i]){
+      coords_range = range(coords[,i])
+      coords[,i] = -1*(coords[,i]-coords_range[1])+coords_range[2]
+      descriptor = paste0(descriptor, axis_des[i])
+    }
+  }
+  
+  if(overwrite){
+    saveRDS(coords, paste0(deconv_dir,spatial.data.name,"/",spatial.data.name,"_coords.RDS"))
+  } else {
+    save_spatial_data(filepath,
+                      region,
+                      paste0(deconv_dir,spatial.data.name,"/",spatial.data.name,"_exp.RDS"),
+                      coords,
+                      paste0(spatial.data.name,"_",descriptor))
+  }
+  
+}
+
+
+
+transform_coords_to_ccf = function(
+    filepath,
+    region,
+    spatial.data.name,
+    ish = T,
+    overwrite = T){
+  scale_factor = if(ish){200}else{25}
+  deconv_dir = paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/")
+  coords = readRDS(paste0(deconv_dir,spatial.data.name,"/",spatial.data.name,"_coords.RDS"))
+  coords = coords*scale_factor
+  if(ish){
+    coords[,3] = -coords[,3]+min(coords[,3])+max(coords[,3])+2400
+    coords[,2] = -coords[,2]+min(coords[,2])+max(coords[,2])+5500
+  } else {
+    coords[,2] = -coords[,2]+min(coords[,2])+max(coords[,2])+3000
+  }
+  if(overwrite){
+    files_dir = list.files(paste0(deconv_dir,spatial.data.name), full.names = T) 
+    files_coords = files_dir[grep("coords", files_dir)]
+    for(file_coord in files_coords){
+      coords_file = readRDS(file_coord)
+      saveRDS(coords[rownames(coords) %in% rownames(coords_file),], file_coord)
+    }
+    message("Rerun downstream plotting functions (generate_loading_gifs, calculate_wasserstein, etc.) to update with transformed coordinates")
+  } else {
+    saveRDS(coords, paste0("~/",region, "_",spatial.data.name, "_in_ccf.RDS"))
+  }
+}
+
+
