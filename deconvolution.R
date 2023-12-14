@@ -1,62 +1,63 @@
+#' Title
+#'
+#' @param filepath Path to analysis directory
+#' @param analysis.name String identifying the analysis
+#' @param spatial.data.name String identifying the spatial sample
+#' @param rand.seed Integer random seed
+#' @param lambda Double, regularization parameter for which increasing penalizes
+#'    dataset-specific effects
+#' @param thresh Double, minimum fractional change in objective function to
+#'    continue iteration
+#' @param max.iters Integer maximum of iterations to complete before pausing
+#' @param nrep Number of random starts to complete
+#' @param print.obj Logical, if to print current value of objective
+#' @param verbose  Logical, if to print the final objective and best random seed
+#'
+#' @return nothing
+#'
+#' @import rliger
+#'
+#' @export
+#' @examples
 learn_gene_signatures =function(filepath,
-                              region,
-                              spatial.data.name,
-                              lambda = 1,
-                              thresh = 1e-8,
-                              max.iters = 100,
-                              nrep = 1,
-                              rand.seed = 123,
-                              print.obj = FALSE,
-                              clusters.from.atlas = TRUE,
-                              naive.clusters = FALSE,
-                              verbose = FALSE){
+                                analysis.name,
+                                spatial.data.name,
+                                rand.seed = 123,
+                                lambda = 1,
+                                thresh = 1e-8,
+                                max.iters = 100,
+                                nrep = 1,
+                                print.obj = FALSE,
+                                verbose = FALSE){
   set.seed(rand.seed)
-  
-  descriptor = as.character(rand.seed)
-  
-  if(clusters.from.atlas){
-    descriptor = paste0(descriptor, "_object_clusters")
-  }
-  if(naive.clusters){
-    descriptor = paste0(descriptor, "_naive")
-    spatial.data.name = paste0(spatial.data.name, "_naive")
-  }
-  
-  dir_spatial = paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/",spatial.data.name)
-  
-  norm.data = readRDS(paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/",descriptor,"_norm_data.RDS"))
-  gene_vec = readRDS(paste0(dir_spatial,"/gene_selection_qc_",descriptor,".RDS"))
+
+  dir_spatial = file.path(filepath,analysis.name,spatial.data.name,rand.seed)
+  norm.data = readRDS(file.path(filepath,analysis.name,rand.seed,"norm_data.RDS"))
+  gene_vec = readRDS(file.path(filepath, analysis.name,spatial.data.name,rand.seed,"gene_selection_qc.RDS"))
   gene_vec = intersect(gene_vec, rownames(norm.data[[1]]))
-  
-  sample.cells = readRDS(paste0(paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/sampled_cells_", descriptor,".RDS")))
-  
-  if(clusters.from.atlas){
-     clusters = readRDS(paste0(paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/clusters_",descriptor,".RDS")))
-  } else {
-     clusters = readRDS(paste0(paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/user_defined_clusters_",descriptor,".RDS")))
-  }
+  sample.cells = readRDS(file.path(filepath,analysis.name,rand.seed,"sampled_cells.RDS"))
+  clusters = readRDS(file.path(filepath,analysis.name,"source_annotations.RDS"))
+
   clusters = clusters[sample.cells]
-  
+
   message("Learning gene signatures")
   E = lapply(norm.data, function(x){t(as.matrix(x)[gene_vec,])})
-  
+
   if (!all(sapply(X = E, FUN = is.matrix))) {
     stop("All values in 'object' must be a matrix")
   }
   N <- length(x = E)
   ns <- sapply(X = E, FUN = nrow)
-  #if (k >= min(ns)) {
-  #  stop('Select k lower than the number of cells in smallest dataset: ', min(ns))
-  #}
+
   tmp <- gc()
-  
+
   clust_levels = levels(clusters)
   numeric_clust = as.numeric(clusters)
   names(numeric_clust) = names(clusters)
   H_cells = lapply(norm.data, colnames)
   clust_vec = rep(0, length(clust_levels))
   N = length(E)
-  
+
   H_indic <- lapply(
     X = H_cells,
     FUN = function(n) {
@@ -77,7 +78,7 @@ learn_gene_signatures =function(filepath,
     nrow = k,
     ncol = g
   )
-  
+
   V <- lapply(
     X = 1:N,
     FUN = function(i) {
@@ -93,7 +94,7 @@ learn_gene_signatures =function(filepath,
   V_m = V
   W_m = W
   H_m = H_indic
-  
+
   #E = lapply(E, t)
   for (rep_num in 1:nrep) {
     set.seed(seed = rand.seed + rep_num - 1)
@@ -115,7 +116,7 @@ learn_gene_signatures =function(filepath,
         }
       ))
     tmp <- gc()
-    
+
     while (delta > thresh & iters < max.iters) {
       W <- rliger:::solveNNLS(
         C = do.call(rbind, H_indic),
@@ -124,7 +125,7 @@ learn_gene_signatures =function(filepath,
                                     return(E[[i]] - H_indic[[i]] %*% (W + V[[i]]))})
         )
       )
-      
+
       tmp <- gc()
       V <- lapply(
         X = 1:N,
@@ -155,19 +156,14 @@ learn_gene_signatures =function(filepath,
       setTxtProgressBar(pb = pb, value = iters)
     }
     setTxtProgressBar(pb = pb, value = max.iters)
-    # if (iters == max.iters) {
-    #   print("Warning: failed to converge within the allowed number of iterations.
-    #         Re-running with a higher max.iters is recommended.")
-    # }
+
     if (obj < best_obj) {
       W_m <- W
       V_m <- V
       best_obj <- obj
       best_seed <- rand.seed + rep_num - 1
     }
-    
-    
-    
+
     if (verbose) {
       if (print.obj) {
         cat("Objective:", obj, "\n")
@@ -180,76 +176,55 @@ learn_gene_signatures =function(filepath,
   for (i in 1:length(E)) {
     rownames(x = out$H[[i]]) <- rownames(x = E[[i]])
   }
-  
+
   out$V <- V_m
   out$W <- W_m
-  
-  out$H_refined <- lapply(X = 1:length(E),
-                          FUN = function(i){
-                            mat = t(x = rliger:::solveNNLS(
-                              C = rbind(t(x = W) + t(x = V[[i]]), sqrt_lambda * t(x = V[[i]])),
-                              B = rbind(t(x = E[[i]]), matrix(data = 0, nrow = g, ncol = ns[[i]]))
-                            )
-                            )
-                            rownames(mat) = rownames(E[[i]])
-                            return(mat)
-                          })
-  
-  names(x = out$V) <- names(x = out$H) <- names(x = out$H_refined) <- names(x = E)
-  
+
+  names(x = out$V) <- names(x = out$H) <- names(x = E)
+
   rownames(out$W) = clust_levels
   colnames(out$W) = gene_vec
-  
-  saveRDS(out, paste0(dir_spatial, "/gene_signature_output_",descriptor,".RDS"))
+
+  saveRDS(out, file.path(dir_spatial, "gene_signature_output.RDS"))
 }
 
+#' Title
+#'
+#' @param filepath Path to analysis directory
+#' @param analysis.name String identifying the analysis
+#' @param spatial.data.name String identifying the spatial sample
+#' @param rand.seed Integer random seed
+#' @param cell.size Logical, if to scale gene signatures by cell sizes
+#'
+#' @return nothing
+#'
+#' @import rliger
+#'
+#' @export
+#' @examples
+
 deconvolve_spatial = function(filepath,
-                              region,
+                              analysis.name,
                               spatial.data.name,
                               rand.seed = 123,
-                              clusters.from.atlas = TRUE,
-                              naive.clusters = FALSE,
-                              cell.size = F,
-                              W = NULL){
+                              cell.size = T){
   set.seed(rand.seed)
-  
-  descriptor = as.character(rand.seed)
-  
-  if(clusters.from.atlas){
-    descriptor = paste0(descriptor, "_object_clusters")
-  }
-  if(naive.clusters){
-    descriptor = paste0(descriptor, "_naive")
-    spatial.data.name = paste0(spatial.data.name, "_naive")
-  }
-  
-  dir_spatial = paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/",spatial.data.name)
-  
-  spatial.data = readRDS(paste0(dir_spatial,"/",spatial.data.name,"_exp_qc_",descriptor,".RDS"))
-  
-  if(is.null(W)){
-    out = readRDS(paste0(dir_spatial, "/gene_signature_output_",descriptor,".RDS"))
-    W = out[["W"]]
-  } else {
-    W = readRDS(W)
-    descriptor = paste0(rand.seed, "_custom_w")
-  }
-  
+
+  dir_spatial = file.path(filepath,analysis.name,spatial.data.name,rand.seed)
+  spatial.data = readRDS(file.path(dir_spatial,"exp_qc.RDS"))
+  out = readRDS(file.path(dir_spatial, "gene_signature_output.RDS"))
+
+  W = out[["W"]]
   gene_vec = intersect(colnames(W), rownames(spatial.data))
   spatial.data = spatial.data[gene_vec,]
   W = W[,gene_vec]
-  
+
   if(cell.size){
-    if(naive.clusters){
-      cell_size_mean = readRDS(paste0(filepath,"/",region, "/", region, "_Deconvolution_Output/cell_size_",rand.seed,"_object_clusters_naive.RDS"))
-    } else {
-      cell_size_mean = readRDS(paste0(filepath, "/", region, "/", region, "_Deconvolution_Output/cell_size_",rand.seed,"_object_clusters.RDS"))
-    }
+    cell_size_mean = readRDS(file.path(filepath,analysis.name,"cell_size.RDS"))
     W = t(sapply(1:nrow(W), function(i){return(cell_size_mean[i]*W[i,])}))
     rownames(W) = names(cell_size_mean)
-    descriptor = paste0(descriptor, "_size_scaled")
   }
-  
+
   message("Deconvolving spatial data")
   spatial.data = t(scale(t(as.matrix(spatial.data)), center = FALSE))
   spatial.data[spatial.data < 0 ] = 0
@@ -259,9 +234,13 @@ deconvolve_spatial = function(filepath,
   deconv_frac = t(apply(deconv_h, MARGIN = 1, function(x){x/sum(x)}))
   rownames(deconv_frac) = rownames(deconv_h) = colnames(spatial.data)
   deconv_frac[is.nan(deconv_frac)] = 0
-  saveRDS(list(raw = deconv_h, proportions = deconv_frac), paste0(dir_spatial,"/deconvolution_output_",descriptor,".RDS"))
   message("Deconvolution completed")
-  
-  dir.create(paste0(dir_spatial,"/",descriptor,"_output"))
-  
+
+  saveRDS(list(raw = deconv_h, proportions = deconv_frac), file.path(dir_spatial,"deconvolution_output.RDS"))
+
+  dir_output = file.path(dir_spatial,"downstream_output")
+  if(!dir.exists(dir_output)){
+    dir.create(paste0(dir_output))
+    message("Created directory at ", dir_output)
+  }
 }
