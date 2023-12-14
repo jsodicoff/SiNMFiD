@@ -1,38 +1,58 @@
-# Functions required for utilization of the DUMfound deconvolution pipeline on
-# fully annotated region atlases
-
-#' @param filepath Path to directory within which the atlas structure was generated
-#' @param region The anatomical region with which the analysis is associated
-#' @param spatial.data.file A filepath to the spatial expression matrix
-#' @param coords An object or filepath to coordinates for the spatial samples
-#' @param spatial.data.name A string, the name of the spatial dataset
-
-save_spatial_data = function(filepath,
-                        region,
-                        spatial.data.file,
-                        coords,
-                        spatial.data.name
-                        ){
-  dir_new = paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/",spatial.data.name)
+#' Set up new analysis directory
+#'
+#' @param filepath Path to analysis directory
+#' @param analysis.name String identifying the analysis
+#'
+#' @return nothing
+#'
+#' @import
+#'
+#' @export
+#' @examples
+start_analysis = function(filepath,
+                          analysis.name){
+  dir_new = file.path(filepath,analysis.name)
   if(!dir.exists(dir_new)){
     dir.create(dir_new)
     message("Created directory at ", dir_new)
   }
-  file.copy(spatial.data.file, paste0(dir_new,"/",spatial.data.name,"_exp.RDS"))
-  if(is.character(coords)){
-    file.copy(coords, paste0(dir_new,"/",spatial.data.name,"_coords.RDS"))
-  } else {
-    saveRDS(coords, paste0(dir_new,"/",spatial.data.name,"_coords.RDS"))
-  }
 }
 
-#' Generate plots of the provided spatial data on the XY, YZ, and XZ planes in
-#' a reference grid to allow for indexing.
+#' Add a new spatial dataset to the analysis directory
 #'
-#' @param filepath Path to directory within which the atlas structure was generated
-#' @param region A string corresponding to the name of an anatomical region
-#' @param spatial.data.name A string, the name of the spatial dataset
-#' @param display.plots A logical, corresponding with if to display requested plots upon
+#' @param filepath Path to analysis directory
+#' @param analysis.name String identifying the analysis
+#' @param spatial.data.file Path to an RDS file containing desired expression data
+#' @param coords.file Path to an RDS file containing desired coordinate data
+#' @param spatial.data.name String identifying the spatial sample
+#'
+#' @return nothing
+#'
+#' @import
+#'
+#' @export
+#' @examples
+save_spatial_data = function(filepath,
+                             analysis.name,
+                             spatial.data.file,
+                             coords.file,
+                             spatial.data.name
+){
+  dir_new = file.path(filepath,analysis.name,spatial.data.name)
+  if(!dir.exists(dir_new)){
+    dir.create(dir_new)
+    message("Created directory at ", dir_new)
+  }
+  file.copy(spatial.data.file, file.path(dir_new,"exp.RDS"))
+  file.copy(coords.file, file.path(dir_new,"coords.RDS"))
+}
+
+#' Generate silouhettes of the data along all three axes
+#'
+#' @param filepath Path to analysis directory
+#' @param analysis.name String identifying the analysis
+#' @param spatial.data.name String identifying the spatial sample
+#' @param save.plots A logical, corresponding with if to save requested plots upon
 #'    generation
 #'
 #' @return nothing
@@ -44,16 +64,14 @@ save_spatial_data = function(filepath,
 #' \dontrun{
 #'
 #' }
-#'
 
 reference_3d_coordinates = function(filepath,
-                                    region,
+                                    analysis.name,
                                     spatial.data.name,
                                     save.plots = FALSE){
 
   library(ggplot2)
-  library(cowplot)
-  coords = as.data.frame(readRDS(paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/",spatial.data.name,"/",spatial.data.name,"_coords.RDS")))
+  coords = as.data.frame(readRDS(file.path(filepath,analysis.name,spatial.data.name,"coords.RDS")))
 
   minmax = apply(coords, MARGIN = 2, function(x){range(x)})
   ranges = apply(minmax, MARGIN = 2, function(y){return(y[2]-y[1])})
@@ -63,12 +81,10 @@ reference_3d_coordinates = function(filepath,
     coord_fixed(ratio = 1)+
     geom_tile(aes(alpha = .1)) +
     coord_fixed(ratio = 1) +
-    theme_minimal_grid() +
-    #scale_y_continuous(minor_breaks = seq(minmax[1,2] , minmax[2,2], 1), breaks = seq(minmax[1,2] , minmax[2,2], 5)) +
-    #scale_x_continuous(minor_breaks = seq(minmax[1,1] , minmax[2,1], 1), breaks = seq(minmax[1,1] , minmax[2,1], 5)) +
+    cowplot::theme_minimal_grid() +
     xlab(colnames(coords)[1]) +
     ylab(colnames(coords)[2]) +
-    ggtitle(paste0("X-Y silhouette of ",region))+
+    ggtitle(paste0("X-Y silhouette of ",analysis.name))+
     theme(legend.position="none",
           text = ggplot2::element_text(size = 5),
           axis.text = ggplot2::element_text(size = 4),
@@ -78,12 +94,10 @@ reference_3d_coordinates = function(filepath,
     coord_fixed(ratio = 1)+
     geom_tile(aes(alpha = .1)) +
     coord_fixed(ratio = 1) +
-    theme_minimal_grid() +
-    #scale_y_continuous(minor_breaks = seq(minmax[1,3] , minmax[2,3], 1), breaks = seq(minmax[1,3] , minmax[2,3], 5)) +
-    #scale_x_continuous(minor_breaks = seq(minmax[1,1] , minmax[2,1], 1), breaks = seq(minmax[1,1] , minmax[2,1], 5)) +
+    cowplot::theme_minimal_grid() +
     xlab(colnames(coords)[1]) +
     ylab(colnames(coords)[3]) +
-    ggtitle(paste0("X-Z silhouette of ",region))+
+    ggtitle(paste0("X-Z silhouette of ",analysis.name))+
     theme(legend.position="none",
           text = ggplot2::element_text(size = 5),
           axis.text = ggplot2::element_text(size = 4),
@@ -94,21 +108,21 @@ reference_3d_coordinates = function(filepath,
     geom_tile(aes(alpha = .1)) +
     coord_fixed(ratio = 1) +
     theme_minimal_grid() +
-    #scale_y_continuous(minor_breaks = seq(minmax[1,3] , minmax[2,3], 1), breaks = seq(minmax[1,3] , minmax[2,3], 5)) +
-    #scale_x_continuous(minor_breaks = seq(minmax[1,2] , minmax[2,2], 1), breaks = seq(minmax[1,2] , minmax[2,2], 5)) +
     xlab(colnames(coords)[2]) +
     ylab(colnames(coords)[3]) +
-    ggtitle(paste0("Y-Z silhouette of ",region))+
+    ggtitle(paste0("Y-Z silhouette of ",analysis.name))+
     theme(legend.position="none",
           text = ggplot2::element_text(size = 5),
           axis.text = ggplot2::element_text(size = 4),
           plot.title = element_text(size=6))
+
+  message("Plots generated")
   print(p1)
   print(p2)
   print(p3)
-  message("Plots generated")
+
   if(save.plots){
-    plots_dir = paste0(filepath,"/",  region,"/", region,"_Deconvolution_Output/",spatial.data.name,"/plots")
+    plots_dir = file.path(filepath,analysis.name,spatial.data.name,"plots")
     if(!dir.exists(plots_dir)){
       dir.create(plots_dir)
       message("Created directory at ", plots_dir)
@@ -135,97 +149,106 @@ reference_3d_coordinates = function(filepath,
 
 #' Subset a spatial dataset by coordinates for analysis
 #'
-#' @param filepath Path to directory within which the atlas structure was generated
-#' @param region The anatomical region with which the analysis is associated
-#' @param spatial.data.name A string, the name of the spatial dataset
-#' @param subset.specs A list with length equal to the number of axises, with
+#' @param filepath Path to analysis directory
+#' @param analysis.name String identifying the analysis
+#' @param spatial.data.name String identifying the spatial sample
+#' @param subset.specs A list with length equal to the number of axes, with
 #'    each entry a vector of length two, with the first element being the
 #'    minimum value to include and the second being the maximum, or NaN to
 #'    indicate a missing value
-#' @param out.filepath Path to directory to save subset data to, if NULL the
-#'    expression and coordinates in the atlas directory structure are
-#'    overwritten
+#' @param new.spatial.data.name String, optional name for new analysis, otherwise
+#'    the default "`spatial.data.name`_subset_`n.samples`" is used
+#' @param out.filepath Path to directory to save subset data to
+#'    if not within the analysis
+#'
+#' @return nothing
+#'
+#' @import
+#'
+#' @export
+#' @examples
+
 subset_spatial_data = function(filepath,
-                               region,
+                               analysis.name,
                                spatial.data.name,
                                subset.specs = list(c(NaN, NaN),
                                                    c(NaN, NaN),
                                                    c(NaN, NaN)),
+                               new.spatial.data.name= NULL,
                                out.filepath = NULL){
-  deconv_dir = paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/")
-  coords = readRDS(paste0(deconv_dir,spatial.data.name,"/",spatial.data.name,"_coords.RDS"))
-  spatial.data = readRDS(paste0(deconv_dir,spatial.data.name,"/",spatial.data.name,"_exp.RDS"))
+
+  deconv_dir = file.path(filepath,analysis.name,spatial.data.name)
+  coords = as.data.frame(readRDS(file.path(filepath,analysis.name,spatial.data.name,"coords.RDS")))
+  spatial.data = readRDS(file.path(deconv_dir,"exp.RDS"))
+
   for(i in 1:ncol(coords)){
     subset.specs[[i]][is.nan(subset.specs[[i]])] = range(coords[,i])[is.nan(subset.specs[[i]])]
     coords = coords[coords[,i] >= subset.specs[[i]][1] & coords[,i] <= subset.specs[[i]][2], ]
   }
+
   if(nrow(coords) == 0){
     stop("No samples selected -- provide a new range of coordinates.")
   } else {
     message(paste0("Sample subset to ", nrow(coords), " samples."))
   }
+
   spatial.data = spatial.data[, rownames(coords)]
-  new_spatial.data.name = paste0(spatial.data.name,"_subset_",nrow(coords))
+
+  if(is.null(new.spatial.data.name)){
+    new.spatial.data.name = paste0(spatial.data.name,"_subset_",nrow(coords))
+  }
   if(!is.null(out.filepath)){
-    saveRDS(spatial.data, paste0(out.filepath, "/", new_spatial.data.name,"_exp.RDS"))
-    saveRDS(coords, paste0(out.filepath, "/", new_spatial.data.name,"_coords.RDS"))
+    saveRDS(spatial.data, paste0(out.filepath, "/", new.spatial.data.name,"_exp.RDS"))
+    saveRDS(coords, paste0(out.filepath, "/", new.spatial.data.name,"_coords.RDS"))
     message("Saved expression and coordinates to ", out.filepath)
   } else {
-    new_dir = paste0(deconv_dir,new_spatial.data.name)
+    new_dir = file.path(filepath,analysis.name,new.spatial.data.name)
     dir.create(new_dir)
     message("Created directory at ", new_dir)
-    saveRDS(spatial.data, paste0(new_dir,"/",new_spatial.data.name,"_exp.RDS"))
-    saveRDS(coords, paste0(new_dir,"/",new_spatial.data.name,"_coords.RDS"))
+    saveRDS(spatial.data, paste0(new_dir,"/exp.RDS"))
+    saveRDS(coords, paste0(new_dir,"/coords.RDS"))
     message("Saved expression and coordinates to ", new_dir)
   }
 }
 
+#' Quality-control spatial data
+#'
+#' @param filepath Path to analysis directory
+#' @param analysis.name String identifying the analysis
+#' @param spatial.data.name String identifying the spatial sample
+#' @param count.data Logical, if the spatial data is from a counts
+#'     or intensity-based modality
+#' @param z Double, the standard deviations above the mean that the number of
+#'     NAs in a gene can be before the gene is removed, for intensity data
+#' @param n.umi.thresh Integer number of counts below which to remove a sample,
+#'     for counts based data
+#' @param rand.seed Integer random seed
+#'
+#' @return nothing
+#'
+#' @import Matrix
+#'
+#' @export
+#' @examples
+
 qc_spatial_data = function(
     filepath,
-    region,
+    analysis.name,
     spatial.data.name,
-    slide.seq = FALSE,
-    clusters.from.atlas = TRUE,
-    naive.clusters = FALSE,
+    count.data = FALSE,
     z = 1,
     n.umi.thresh = 150,
     rand.seed = 123
 ){
   set.seed(rand.seed)
-  
-  descriptor = as.character(rand.seed)
-  
-  if(clusters.from.atlas){
-    descriptor = paste0(descriptor, "_object_clusters")
-  }
-  if(naive.clusters){
-    descriptor = paste0(descriptor, "_naive")
-    
-    dir_spatial = paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/",spatial.data.name)
-    dir_spatial_new = paste0(dir_spatial, "_naive")
-
-    dir.create(dir_spatial_new)
-    file.copy(paste0(dir_spatial,"/",spatial.data.name,"_exp.RDS"),dir_spatial_new)
-    file.copy(paste0(dir_spatial,"/",spatial.data.name,"_coords.RDS"),dir_spatial_new)
-    file.rename(from = paste0(dir_spatial_new,"/",spatial.data.name,"_exp.RDS"), to = paste0(dir_spatial_new,"/",spatial.data.name,"_naive_exp.RDS"))
-    file.rename(from = paste0(dir_spatial_new,"/",spatial.data.name,"_coords.RDS"), to = paste0(dir_spatial_new,"/",spatial.data.name,"_naive_coords.RDS"))
-
-    spatial.data.name = paste0(spatial.data.name, "_naive")
-  }
-  
-  dir_spatial = paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/",spatial.data.name)
-  
-  
-  
-  spatial.data = readRDS(paste0(dir_spatial,"/",spatial.data.name,"_exp.RDS"))
-  coords = readRDS(paste0(dir_spatial,"/",spatial.data.name,"_coords.RDS"))
-
-  gene_data = readRDS(paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/gene_selection_",descriptor,".RDS"))
+  dir_spatial = file.path(filepath,analysis.name,spatial.data.name)
+  spatial.data = readRDS(file.path(dir_spatial,"exp.RDS"))
+  coords = readRDS(file.path(dir_spatial,"coords.RDS"))
+  gene_data = readRDS(file.path(filepath,analysis.name,rand.seed,"gene_selection.RDS"))
   gene_vec = gene_data[[2]]
-  
-  
-  if(!slide.seq){
-    spatial.data[spatial.data == -1] = NA
+
+  if(!count.data){
+    spatial.data[spatial.data < 0] = NA
     genes_NA = apply(spatial.data, MARGIN = 1, function(x){sum(is.na(x))})
     mean_genes_NA = mean(genes_NA)
     genes_use = rownames(spatial.data)[genes_NA < (mean_genes_NA + z * mean_genes_NA)]
@@ -238,49 +261,154 @@ qc_spatial_data = function(
     spatial.data = spatial.data[,Matrix::colSums(spatial.data) > n.umi.thresh]
     message(nrow(spatial.data), " genes used out of ", original_dim[1], " and ", ncol(spatial.data), " cells used out of ", original_dim[2])
   }
-  
+
   coords = coords[colnames(spatial.data),]
-  
-  saveRDS(spatial.data, paste0(dir_spatial,"/",spatial.data.name,"_exp_qc_",descriptor,".RDS"))
-  saveRDS(coords, paste0(dir_spatial,"/",spatial.data.name,"_coords_qc_",descriptor,".RDS"))
-  saveRDS(rownames(spatial.data), paste0(dir_spatial,"/gene_selection_qc_",descriptor,".RDS"))
+
+  dir.create(dir_save)
+  message("Created directory at ",dir_save)
+
+  saveRDS(spatial.data, file.path(dir_save,"exp_qc.RDS"))
+  saveRDS(coords, file.path(dir_save,"coords_qc.RDS"))
+  saveRDS(rownames(spatial.data), file.path(dir_save,"gene_selection_qc.RDS"))
 }
 
+#' Coarse-grain spatial data to a predetermined resolution
+#'
+#' @param filepath Path to analysis directory
+#' @param analysis.name String identifying the analysis
+#' @param spatial.data.name String identifying the spatial sample
+#' @param voxel.size Integer, side length of one voxel
+#' @param out.filepath Path to directory to save subset data to
+#'    if not within the analysis
+#' @param verbose Logical, if to print several lines of metadata on results
+#'
+#' @return nothing
+#'
+#' @import Matrix
+#'
+#' @export
+#' @examples
 
+voxelize_single_cells = function(
+    filepath,
+    analysis.name,
+    spatial.data.name,
+    voxel.size,
+    out.filepath = NULL,
+    verbose = TRUE
+){
+  dir_spatial = file.path(filepath,analysis.name,spatial.data.name)
+  spatial.data = readRDS(file.path(dir_spatial,"exp.RDS"))
+  coords = readRDS(file.path(dir_spatial,"coords.RDS"))
 
-register_voxel_to_label = function(filepath,
-                              region,
-                              spatial.data.name,
-                              labels.use,
-                              label.name){
+  minmax = apply(coords, MARGIN = 2, function(x){round(range(x),-1)})
+  ranges = apply(minmax, MARGIN = 2, function(y){return(y[2]-y[1])})
 
-    dir_spatial = paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/",spatial.data.name)
+  coords_adjusted = sapply(1:3, function(i){
+    coords[,i] = voxel.size*round(coords[,i]/voxel.size)
+  })
 
+  colnames(coords_adjusted) = colnames(coords)
 
-    voxels_to_samples = readRDS(paste0(dir_spatial, "/",spatial.data.name,"_voxels_to_samples.RDS"))
-  
-    unique_labels = unique(labels.use)
+  coords_out = coords_adjusted[!duplicated(coords_adjusted),]
+  voxel_exp = matrix(0L, nrow = nrow(spatial.data), ncol = nrow(coords_out))
+  voxel_list = list()
 
-    voxel_to_subregion = sapply(unique_labels, function(unique_label){
-      label_counts = sapply(names(voxels_to_samples), function(voxel_to_sample){
-        sum(labels.use[voxels_to_samples[[voxel_to_sample]]] %in% unique_label)
-      })
-      return(unique_label[which.max(label_counts)])
-    })
-  
-    names(voxel_to_subregion) = names(voxels_to_samples)
-  
-    saveRDS(proportion_loading_in_subregion, paste0(dir_spatial, "/voxel_assignment_by_label_",label.name,".RDS"))
+  for(i in 1:nrow(coords_out)){
+    voxels_use = coords_out[i,1] == coords_adjusted[,1]&
+      coords_out[i,2] == coords_adjusted[,2]&
+      coords_out[i,3] == coords_adjusted[,3]
+    voxel_data = spatial.data[,voxels_use]
+    voxel_list[[i]] = colnames(spatial.data)[voxels_use]
+    if(!is.null(dim(voxel_data))){
+      voxel_exp[,i] = Matrix::rowSums(voxel_data)
+    } else {
+      voxel_exp[,i] = voxel_data
+    }
   }
 
+  rownames(coords_out) = colnames(voxel_exp) = names(voxel_list) = paste0("voxel_",1:nrow(coords_out))
+  rownames(voxel_exp) = rownames(spatial.data)
+
+
+  if(is.null(out.filepath)){
+    new_dir = file.path(filepath,analysis.name,paste0(spatial.data.name,"_",voxel.size))
+    dir.create(new_dir)
+    message("Saving to new spatial data folder - " , new_dir)
+    out.filepath = new_dir
+  }
+
+  if(verbose){
+    message(paste0("Generated ", nrow(coords_out), " voxels at ", voxel.size, " cubed resolution." ))
+    message(paste0("Mean samples per voxel: ", round(mean(sapply(voxel_list, length)))))
+    message(paste0("Mean nUMI per voxel: ", round(mean(colSums(voxel_exp)))))
+  }
+
+  saveRDS(voxel_exp, file.path(out.filepath,"exp.RDS"))
+  saveRDS(coords_out,file.path(out.filepath,"coords.RDS"))
+  saveRDS(voxel_list,file.path(out.filepath,"voxels_to_samples.RDS"))
+}
+
+#' Transfer labels from coarse-grained sampled
+#'
+#' @param filepath Path to analysis directory
+#' @param analysis.name String identifying the analysis
+#' @param spatial.data.name String identifying the spatial sample
+#' @param labels.use Named vector of labels for the prevoxelized data
+#' @param label.name String identifying the label set
+#'
+#' @return nothing
+#'
+#' @import
+#'
+#' @export
+#' @examples
+register_voxel_to_label = function(filepath,
+                                   analysis.name,
+                                   spatial.data.name,
+                                   labels.use,
+                                   label.name){
+
+  dir_spatial = file.path(filepath,analysis.name,spatial.data.name)
+  voxels_to_samples = readRDS(file.path(dir_spatial,"voxels_to_samples.RDS"))
+
+  unique_labels = unique(labels.use)
+
+  voxel_to_subregion = sapply(unique_labels, function(unique_label){
+    label_counts = sapply(names(voxels_to_samples), function(voxel_to_sample){
+      sum(labels.use[voxels_to_samples[[voxel_to_sample]]] %in% unique_label)
+    })
+    return(unique_label[which.max(label_counts)])
+  })
+  names(voxel_to_subregion) = names(voxels_to_samples)
+
+  saveRDS(proportion_loading_in_subregion, file.path(dir_spatial, paste0("voxel_assignment_by_label_",label.name,".RDS")))
+}
+
+#' Flip axes in spatial data
+#'
+#' @param filepath Path to analysis directory
+#' @param analysis.name String identifying the analysis
+#' @param spatial.data.name String identifying the spatial sample
+#' @param axes.flip A vector with three logicals, corresponding to which of
+#'    the axes to invert
+#' @param overwrite Logical, if the original data should be overwritten,
+#'    otherwise "`spatial.data.name`_mirror`_x`/`_y`,`_z`is created
+#'
+#' @return nothing
+#'
+#' @import
+#'
+#' @export
+#' @examples
 mirror_spatial_coords = function(filepath,
-                              region,
-                              spatial.data.name,
-                              axes.flip = c(FALSE,FALSE,FALSE),
-                              overwrite = T){
-  deconv_dir = paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/")
-  coords = readRDS(paste0(deconv_dir,spatial.data.name,"/",spatial.data.name,"_coords.RDS"))
-  
+                                 analysis.name,
+                                 spatial.data.name,
+                                 axes.flip = c(FALSE,FALSE,FALSE),
+                                 overwrite = T){
+
+  deconv_dir = file.path(filepath,analysis.name,spatial.data.name)
+  coords = readRDS(file.path(deconv_dir, "coords.RDS"))
   descriptor = "mirror"
   axis_des = c("_x","_y", "_z")
 
@@ -291,48 +419,59 @@ mirror_spatial_coords = function(filepath,
       descriptor = paste0(descriptor, axis_des[i])
     }
   }
-  
+
   if(overwrite){
-    saveRDS(coords, paste0(deconv_dir,spatial.data.name,"/",spatial.data.name,"_coords.RDS"))
+    saveRDS(coords, paste0(file.path(deconv_dir, "coords.RDS")))
   } else {
+    coords_file = tempfile()
+    saveRDS(coords, coords_file)
     save_spatial_data(filepath,
-                      region,
-                      paste0(deconv_dir,spatial.data.name,"/",spatial.data.name,"_exp.RDS"),
-                      coords,
+                      analysis.name,
+                      paste0(file.path(deconv_dir, "exp.RDS")),
+                      coords_file,
                       paste0(spatial.data.name,"_",descriptor))
   }
-  
+
 }
 
-
+#' Use predefined transformations to match some modalities to the Allen CCF
+#'
+#' @param filepath Path to analysis directory
+#' @param analysis.name String identifying the analysis
+#' @param spatial.data.name String identifying the spatial sample
+#' @param ish Logical, if the data comes from the Allen Institute
+#'    quantified ISH dataset
+#'
+#' @return nothing
+#'
+#' @import
+#'
+#' @export
+#' @examples
 
 transform_coords_to_ccf = function(
     filepath,
-    region,
+    analysis.name,
     spatial.data.name,
-    ish = T,
-    overwrite = T){
+    ish = T){
+
+  deconv_dir = file.path(filepath,analysis.name,spatial.data.name)
+  coords = file.path(deconv_dir, "coords.RDS")
+
   scale_factor = if(ish){200}else{25}
-  deconv_dir = paste0(filepath,"/",  region, "/", region,"_Deconvolution_Output/")
-  coords = readRDS(paste0(deconv_dir,spatial.data.name,"/",spatial.data.name,"_coords.RDS"))
   coords = coords*scale_factor
+
   if(ish){
     coords[,3] = -coords[,3]+min(coords[,3])+max(coords[,3])+2400
     coords[,2] = -coords[,2]+min(coords[,2])+max(coords[,2])+5500
   } else {
     coords[,2] = -coords[,2]+min(coords[,2])+max(coords[,2])+3000
   }
-  if(overwrite){
-    files_dir = list.files(paste0(deconv_dir,spatial.data.name), full.names = T) 
-    files_coords = files_dir[grep("coords", files_dir)]
-    for(file_coord in files_coords){
-      coords_file = readRDS(file_coord)
-      saveRDS(coords[rownames(coords) %in% rownames(coords_file),], file_coord)
-    }
-    message("Rerun downstream plotting functions (generate_loading_gifs, calculate_wasserstein, etc.) to update with transformed coordinates")
-  } else {
-    saveRDS(coords, paste0("~/",region, "_",spatial.data.name, "_in_ccf.RDS"))
-  }
+  coords_file = tempfile()
+  saveRDS(coords, coords_file)
+  save_spatial_data(filepath,
+                    analysis.name,
+                    paste0(file.path(deconv_dir, "exp.RDS")),
+                    coords_file,
+                    paste0(spatial.data.name,"_ccf"))
 }
-
-
