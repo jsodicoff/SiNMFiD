@@ -335,7 +335,6 @@ plot_analyze_gene_signatures = function(filepath,
                                    spatial.data.name,
                                    rand.seed = 123,
                                    print.plots = T){
-  library(ggplot2)
 
   dir_spatial = file.path(filepath,analysis.name,spatial.data.name,rand.seed)
   dir_output = file.path(dir_spatial,"downstream_output")
@@ -419,8 +418,6 @@ cell_type_loading_histogram = function(
     cell.types.plot = NULL,
     print.plots = TRUE,
     bin.num = 30){
-
-  library(ggplot2)
 
   set.seed(rand.seed)
 
@@ -540,7 +537,6 @@ plot_analyze_spatial_correlation = function(filepath,
                                        spatial.data.name,
                                        rand.seed = 123,
                                        print.plots = TRUE){
-  library(ggplot2)
 
   set.seed(rand.seed)
 
@@ -725,8 +721,6 @@ plot_calculate_wasserstein = function(
     spatial.data.name,
     rand.seed = 123,
     print.plots = T){
-
-  library(ggplot2)
 
   set.seed(rand.seed)
 
