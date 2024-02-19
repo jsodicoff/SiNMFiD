@@ -5,10 +5,8 @@
 #' @param spatial.data.name String identifying the spatial sample
 #' @param rand.seed Integer random seed
 #'
-#' @return
+#' @return nothing
 #' @export
-#'
-#' @examples
 three_d_plotting_routine = function(filepath,
                                     analysis.name,
                                     spatial.data.name,
@@ -33,10 +31,8 @@ three_d_plotting_routine = function(filepath,
 
 #' Clear relevant paths out of environment
 #'
-#' @return
+#' @return nothing
 #' @export
-#'
-#' @examples
 three_d_plotting_routine_end = function(){
   rm(dir_spatial, dir_output, dir_plots, dir_gifs)
 }
@@ -56,10 +52,8 @@ three_d_plotting_routine_end = function(){
 #' @param dims Integer vector of length 2 corresponding to the width and
 #'     height of the RGL window
 #'
-#' @return
+#' @return nothing
 #' @export
-#'
-#' @examples
 view_in_rgl = function(
     filepath,
     analysis.name,
@@ -112,11 +106,6 @@ view_in_rgl = function(
 #' @import rgl
 #'
 #' @export
-#' @examples
-#' \dontrun{
-#'
-#' }
-
 generate_loading_gifs = function(
     filepath,
     analysis.name,
@@ -172,10 +161,9 @@ generate_loading_gifs = function(
 #' @param dims Integer vector of length 2 corresponding to the width and
 #'     height of the RGL window
 #'
-#' @return
+#' @return nothing
 #' @export
 #'
-#' @examples
 generate_label_gifs = function(
     filepath,
     analysis.name,
@@ -221,20 +209,18 @@ generate_label_gifs = function(
 
 #' Title
 #'
-#' @param filepath
-#' @param analysis.name
-#' @param spatial.data.name
-#' @param rand.seed
-#' @param mat.use
-#' @param cell.types.plot
-#' @param subregions.plot
-#' @param filter
-#' @param dims
+#' @param filepath filepath
+#' @param analysis.name analysis.name
+#' @param spatial.data.name spatial.data.name
+#' @param rand.seed rand.seed
+#' @param mat.use mat.use
+#' @param cell.types.plot cell.types.plot
+#' @param subregions.plot subregions.plot
+#' @param filter filter
+#' @param dims dims
 #'
-#' @return
+#' @return nothing
 #' @export
-#'
-#' @examples
 overlay_subregion_gifs = function(
     filepath,
     analysis.name,

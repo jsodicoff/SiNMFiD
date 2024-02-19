@@ -15,6 +15,9 @@ three_d_plotting_routine(filepath, analysis.name, spatial.data.name, rand.seed)
 
 \item{rand.seed}{Integer random seed}
 }
+\value{
+nothing
+}
 \description{
 Routine for loading filepaths relevant to 3d plotting functionality
 }

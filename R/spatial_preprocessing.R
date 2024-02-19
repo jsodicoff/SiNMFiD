@@ -5,10 +5,7 @@
 #'
 #' @return nothing
 #'
-#' @import
-#'
 #' @export
-#' @examples
 start_analysis = function(filepath,
                           analysis.name){
   dir_new = file.path(filepath,analysis.name)
@@ -27,11 +24,7 @@ start_analysis = function(filepath,
 #' @param spatial.data.name String identifying the spatial sample
 #'
 #' @return nothing
-#'
-#' @import
-#'
 #' @export
-#' @examples
 save_spatial_data = function(filepath,
                              analysis.name,
                              spatial.data.file,
@@ -57,14 +50,11 @@ save_spatial_data = function(filepath,
 #'
 #' @return nothing
 #'
-#' @import ggplot2, cowplot, viridis
+#' @import ggplot2
+#' @import cowplot
+#' @import viridis
 #'
 #' @export
-#' @examples
-#' \dontrun{
-#'
-#' }
-
 reference_3d_coordinates = function(filepath,
                                     analysis.name,
                                     spatial.data.name,
@@ -162,12 +152,7 @@ reference_3d_coordinates = function(filepath,
 #'    if not within the analysis
 #'
 #' @return nothing
-#'
-#' @import
-#'
 #' @export
-#' @examples
-
 subset_spatial_data = function(filepath,
                                analysis.name,
                                spatial.data.name,
@@ -229,8 +214,6 @@ subset_spatial_data = function(filepath,
 #' @import Matrix
 #'
 #' @export
-#' @examples
-
 qc_spatial_data = function(
     filepath,
     analysis.name,
@@ -287,8 +270,6 @@ qc_spatial_data = function(
 #' @import Matrix
 #'
 #' @export
-#' @examples
-
 voxelize_single_cells = function(
     filepath,
     analysis.name,
@@ -358,11 +339,7 @@ voxelize_single_cells = function(
 #' @param label.name String identifying the label set
 #'
 #' @return nothing
-#'
-#' @import
-#'
 #' @export
-#' @examples
 register_voxel_to_label = function(filepath,
                                    analysis.name,
                                    spatial.data.name,
@@ -396,11 +373,7 @@ register_voxel_to_label = function(filepath,
 #'    otherwise "`spatial.data.name`_mirror`_x`/`_y`,`_z`is created
 #'
 #' @return nothing
-#'
-#' @import
-#'
 #' @export
-#' @examples
 mirror_spatial_coords = function(filepath,
                                  analysis.name,
                                  spatial.data.name,
@@ -443,12 +416,7 @@ mirror_spatial_coords = function(filepath,
 #'    quantified ISH dataset
 #'
 #' @return nothing
-#'
-#' @import
-#'
 #' @export
-#' @examples
-
 transform_coords_to_ccf = function(
     filepath,
     analysis.name,

@@ -4,16 +4,14 @@
 \alias{load_objs}
 \title{Load data from one of multiple formats}
 \usage{
-load_objs(objs)
+load_objs(objs, datasets.remove)
 }
 \arguments{
-\item{objs}{Either a list of matrices,
-a list of paths to RDS files,
-a list of paths to H5 files,
-or liger objects}
+\item{objs}{A named list of matrices (dgCMatrix), RDS file paths to matirces,
+H5 file paths to LIGER analyzed datasets.}
 }
 \value{
-nothing
+list object. List element type depends on input.
 }
 \description{
 Load data from one of multiple formats

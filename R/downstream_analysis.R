@@ -18,11 +18,7 @@
 #' @return cell-type and gene expression data summarized by layer in a named
 #'     list, if `return.objs = TRUE`
 #'
-#' @import
-#'
 #' @export
-#' @examples
-
 summarize_by_layer = function(
     filepath,
     analysis.name,
@@ -126,8 +122,6 @@ summarize_by_layer = function(
 #' @import ggplot2
 #'
 #' @export
-#' @examples
-
 plot_summarize_by_layer = function(
     filepath,
     analysis.name,
@@ -277,8 +271,6 @@ plot_summarize_by_layer = function(
 #' @import lsa
 #'
 #' @export
-#' @examples
-
 analyze_gene_signatures = function(filepath,
                                    analysis.name,
                                    spatial.data.name,
@@ -325,11 +317,10 @@ analyze_gene_signatures = function(filepath,
 #'
 #' @return nothing
 #'
-#' @import ggplot2, viridis
+#' @import ggplot2
+#' @import viridis
 #'
 #' @export
-#' @examples
-
 plot_analyze_gene_signatures = function(filepath,
                                    analysis.name,
                                    spatial.data.name,
@@ -407,8 +398,6 @@ plot_analyze_gene_signatures = function(filepath,
 #' @import ggplot2
 #'
 #' @export
-#' @examples
-
 cell_type_loading_histogram = function(
     filepath,
     analysis.name,
@@ -479,8 +468,6 @@ cell_type_loading_histogram = function(
 #' @import ggplot2
 #'
 #' @export
-#' @examples
-
 analyze_spatial_correlation = function(filepath,
                                        analysis.name,
                                        spatial.data.name,
@@ -527,11 +514,10 @@ analyze_spatial_correlation = function(filepath,
 #'
 #' @return nothing
 #'
-#' @import ggplot2, viridis
+#' @import ggplot2
+#' @import viridis
 #'
 #' @export
-#' @examples
-
 plot_analyze_spatial_correlation = function(filepath,
                                        analysis.name,
                                        spatial.data.name,
@@ -616,8 +602,6 @@ plot_analyze_spatial_correlation = function(filepath,
 #' @import transport
 #'
 #' @export
-#' @examples
-
 calculate_wasserstein = function(
     filepath,
     analysis.name,
@@ -710,11 +694,10 @@ calculate_wasserstein = function(
 #'
 #' @return nothing
 #'
-#' @import ggplot2, viridis
+#' @import ggplot2
+#' @import viridis
 #'
 #' @export
-#' @examples
-
 plot_calculate_wasserstein = function(
     filepath,
     analysis.name,
@@ -770,12 +753,7 @@ plot_calculate_wasserstein = function(
 #'
 #' @return A vector of unique subregions within the provided regions,
 #'     if `return.objs = TRUE`
-#'
-#' @import
-#'
 #' @export
-#' @examples
-
 summarize_subregions = function(regions,
                                 ontology.file = "Downloads/allen_structure_ontology.csv",
                                 return.objs = F){
@@ -812,12 +790,7 @@ summarize_subregions = function(regions,
 #'
 #' @return A vector of unique clusters in the source annotations,
 #'     if `return.objs = TRUE`
-#'
-#' @import
-#'
 #' @export
-#' @examples
-
 summarize_clusters = function(filepath,
                               analysis.name,
                               return.objs = F){

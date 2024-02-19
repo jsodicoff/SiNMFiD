@@ -27,8 +27,3 @@ nothing
 \description{
 Generate silouhettes of the data along all three axes
 }
-\examples{
-\dontrun{
-
-}
-}
