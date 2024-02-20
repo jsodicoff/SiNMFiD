@@ -18,7 +18,6 @@
 #' @import rliger
 #'
 #' @export
-#' @examples
 learn_gene_signatures =function(filepath,
                                 analysis.name,
                                 spatial.data.name,
@@ -201,8 +200,6 @@ learn_gene_signatures =function(filepath,
 #' @import rliger
 #'
 #' @export
-#' @examples
-
 deconvolve_spatial = function(filepath,
                               analysis.name,
                               spatial.data.name,

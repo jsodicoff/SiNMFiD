@@ -6,6 +6,9 @@
 \usage{
 three_d_plotting_routine_end()
 }
+\value{
+nothing
+}
 \description{
 Clear relevant paths out of environment
 }

@@ -2,25 +2,27 @@ Package: SiNMFiD
 Title: What the Package Does (One Line, Title Case)
 Version: 0.0.0.9000
 Authors@R: 
-    person("Joshua", "Sodicoff", , "sodicoff@uchicago.edu", role = c("aut", "cre"))
+    person("Joshua", "Sodicoff", , "sodicoff@uchicago.edu", role = c("aut", "cre")),
+    person("Yichen", "Wang", , "wayichen@umich.edu", role = "ctb")
 Description: What the package does (one paragraph).
 License: MIT + file LICENSE
 Encoding: UTF-8
 Language: es
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Imports: 
     cowplot,
     ggdendro,
     ggplot2,
     grDevices,
-    hfd5r,
+    hdf5r,
     Matrix,
     matrixTests,
     rgl,
     rliger,
     transport,
-    viridis
+    viridis,
+    utils
 Suggests: 
     cocoframer,
     knitr,

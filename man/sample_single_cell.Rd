@@ -5,37 +5,68 @@
 \title{Sample from single cell reference datasets}
 \usage{
 sample_single_cell(
-  objs,
+  data.list,
   annotations,
   filepath,
   analysis.name,
   datasets.remove = NULL,
   n.cells = 500,
-  rand.seed = 123
+  rand.seed = 123,
+  chunk = 1000
 )
 }
 \arguments{
-\item{objs}{Either a list of matrices,
-a list of paths to RDS files,
-or liger objects}
+\item{data.list}{Various formats are allowed, including 1. a liger object;
+2. a character vector containing file names to RDS/H5 files. 3.
+Named list of liger object, RDS/H5 file name, matrix/dgCMatrix. List option
+can have element types mixed. A liger object have to be of version older than
+1.99. RDS files must contain base dense matrix or dgCMatrix supported by
+package "Matrix". H5 files must contain dataset processed by rliger < 1.99.}
 
-\item{annotations}{Named vector of cell type assignments by sample}
+\item{annotations}{Named factor of cell type assignments.}
 
-\item{filepath}{Path to analysis directory}
+\item{filepath}{Path to analysis directory where output sampling needs to be
+stored.}
 
-\item{analysis.name}{String identifying the analysis}
+\item{analysis.name}{String identifying the analysis, used to make up a
+sub-folder name.}
 
-\item{datasets.remove, }{Named list of datasets to remove, if a list of
-online liger objects is provided}
+\item{datasets.remove}{Character vector of datasets to be excluded from
+sampling if \code{data.list} is a liger object. Named list of dataset names
+for exluding datasets in liger objects passed with a list \code{data.list}.}
 
-\item{n.cells}{Integer value corresponding to maximum number
-of samples per cell type}
+\item{n.cells}{Integer value corresponding to maximum number of samples per
+cell type. Default \code{500}.}
 
-\item{rand.seed}{Integer random seed}
+\item{rand.seed}{Integer random seed for reproducible sampling.}
+
+\item{chunk}{Integer chunk size for processing sparse data stored in H5.
+Number of cells to load into memory per iteration. Default \code{1000}.}
 }
 \value{
-nothing
+Nothing is returned. File \code{"norm_data.RDS"} will be stored under
+\code{"<filepath>/<analysis.name>/<rand.seed>/"}, containing a list of
+downsampled scaled (not centered) data matrix. File
+\code{"sampled_cells.RDS"} is stored at the same path, containing barcode
+vector of the sampled cells. File \code{"source_annotations.RDS"} is stored
+at \code{"<filepath>/<analysis.name>/"} which contains input
+\code{annotations}.
 }
 \description{
 Sample from single cell reference datasets
+}
+\examples{
+\dontrun{
+# Explanation for how `datasets.remove` works with example:
+
+names(lig@raw.data)
+# above should show "data1", "data2", "data3", ...
+# Then when sampling from `lig`, the first two datasets can be excluded with
+sample_single_cell(data.list = lig, datasets.remove = c("data1", "data2"))
+
+# If we got a list of liger object
+sample_single_cell(data.list = list(human = lig1, mouse = lig2),
+                   datasets.remove = list(human = c("data1", "data2"),
+                                          mouse = c("10x1")))
+}
 }

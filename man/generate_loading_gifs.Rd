@@ -38,8 +38,3 @@ nothing
 \description{
 Generate gifs of cell type distributions derived from deconvolution in space
 }
-\examples{
-\dontrun{
-
-}
-}

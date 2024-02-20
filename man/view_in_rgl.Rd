@@ -36,6 +36,9 @@ the provided threshold or absence below}
 \item{dims}{Integer vector of length 2 corresponding to the width and
 height of the RGL window}
 }
+\value{
+nothing
+}
 \description{
 Title
 }
