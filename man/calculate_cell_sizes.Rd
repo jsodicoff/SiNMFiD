@@ -4,30 +4,54 @@
 \alias{calculate_cell_sizes}
 \title{Calculate cell sizes with all reference data}
 \usage{
-calculate_cell_sizes(objs, annotations, filepath, analysis.name, plot.hist = F)
+calculate_cell_sizes(
+  data.list,
+  annotations,
+  filepath,
+  analysis.name,
+  datasets.remove = NULL,
+  plot.hist = FALSE,
+  chunk = 1000
+)
 }
 \arguments{
-\item{objs}{Either a list of matrices,
-a list of paths to RDS files,
-a list of paths to H5 files,
-or liger objects}
+\item{data.list}{Various formats are allowed, including 1. a liger object;
+2. a character vector containing file names to RDS/H5 files. 3.
+Named list of liger object, RDS/H5 file name, matrix/dgCMatrix. List option
+can have element types mixed. A liger object have to be of version older than
+1.99. RDS files must contain base dense matrix or dgCMatrix supported by
+package "Matrix". H5 files must contain dataset processed by rliger < 1.99.}
 
-\item{annotations}{Named vector of cell type assignments by sample}
+\item{annotations}{Named factor of all cell type assignments, should be
+concatenated from all datasets.}
 
-\item{filepath}{Path to analysis directory}
+\item{filepath}{Path to analysis directory where output sampling needs to be
+stored.}
 
-\item{analysis.name}{String identifying the analysis}
+\item{analysis.name}{String identifying the analysis, used to make up a
+sub-folder name.}
 
-\item{plot.hist}{Logical, if to display and save histograms
-of nUMIs by cell type}
+\item{datasets.remove}{Character vector of datasets to be excluded from
+sampling if \code{data.list} is a liger object. Named list of dataset names
+for exluding datasets in liger objects passed with a list \code{data.list}.
+See \code{\link{sample_single_cell}} examples.}
 
-\item{n.cells}{Integer value corresponding to maximum number
-of samples per cell type}
+\item{plot.hist}{Logical, if to display and save histograms of nUMIs by cell
+type}
 
-\item{rand.seed}{Integer random seed}
+\item{chunk}{Integer chunk size for processing sparse data stored in H5.
+Number of cells to load into memory per iteration. Default \code{1000}.}
 }
 \value{
-nothing
+Nothing is returned, but the following file will be stored to local:
+\itemize{
+\item{\code{"<filepath>/<analysis.name>/cell_size_histogram.pdf"} - A PDF
+file for the histogram that shows nUMI per cell distribution for each cell
+type}
+\item{\code{"<filepath>/<analysis.name>/cell_size.RDS"} - RDS file of a
+named numeric vector object, total number of counts per cell type across all
+datasets.}
+}
 }
 \description{
 Calculate cell sizes with all reference data
