@@ -117,7 +117,7 @@ sample_single_cell = function(
 
   message("Sample summary -- ")
   print(table(annotations[sample.cells]))
-  dir_new <- file.path(filepath, analysis.name, rand.seed, fsep = )
+  dir_new <- file.path(filepath, analysis.name, rand.seed)
   if (!dir.exists(dir_new)) {
     dir.create(dir_new, recursive = TRUE)
     message("Created directory at ", dir_new)
@@ -281,7 +281,11 @@ calculate_cell_sizes = function(
   size_list = lapply(levels(annotations),
                      function(x) integer(0))
   names(size_list) = levels(annotations)
-
+  dir_new <- file.path(filepath, analysis.name)
+  if (!dir.exists(dir_new)) {
+    dir.create(dir_new, recursive = TRUE)
+    message("Created directory at ", dir_new)
+  }
   for(object in objs){
     if (inherits(object, "dgCMatrix")) {
       isec <- intersect(colnames(object), names(annotations))
@@ -303,7 +307,8 @@ calculate_cell_sizes = function(
       x.link <- object[["matrix/data"]]
       barcodes <- object[["matrix/barcodes"]][]
       ncol <- length(barcodes)
-      nrow <- object[["matrix/features/name"]]$dims
+      features <- object[["matrix/features/name"]][]
+      nrow <- length(features)
       nchunk <- ceiling(ncol / chunk)
       p.start <- NULL
       p.end <- 1
@@ -318,12 +323,14 @@ calculate_cell_sizes = function(
         p.new <- p.orig - p.orig[1]
         i.new <- i.link[(p.orig[1] + 1):p.orig[length(p.orig)]]
         x.new <- x.link[(p.orig[1] + 1):p.orig[length(p.orig)]]
-        mat.chunk <- Matrix::sparseMatrix(
-          i = i.new + 1, p = p.new, x = x.new, dims = c(nrow, p.end - p.start)
-        )
         # idx.orig - The 1-based integer index of cells of the current chunk
         #            out of the whole dataset
         idx.orig <- seq(p.start, p.end - 1)
+        mat.chunk <- Matrix::sparseMatrix(
+          i = i.new + 1, p = p.new, x = x.new, dims = c(nrow, p.end - p.start),
+          dimnames = list(features, barcodes[idx.orig])
+        )
+
         isec <- intersect(barcodes[idx.orig], names(annotations))
         mat.chunk <- mat.chunk[, isec, drop = FALSE]
         ann <- annotations[isec, drop = TRUE]
