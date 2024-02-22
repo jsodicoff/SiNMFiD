@@ -236,57 +236,125 @@ Matrix.column_norm <- function(A) {
 
 #' Calculate cell sizes with all reference data
 #'
-#' @param objs Either a list of matrices,
-#'    a list of paths to RDS files,
-#'    a list of paths to H5 files,
-#'    or liger objects
-#' @param annotations Named vector of cell type assignments by sample
-#' @param filepath Path to analysis directory
-#' @param analysis.name String identifying the analysis
-#' @param n.cells Integer value corresponding to maximum number
-#'    of samples per cell type
-#' @param rand.seed Integer random seed
-#' @param plot.hist Logical, if to display and save histograms
-#'    of nUMIs by cell type
-#'
-#' @return nothing
-#'
+#' @param data.list Various formats are allowed, including 1. a liger object;
+#' 2. a character vector containing file names to RDS/H5 files. 3.
+#' Named list of liger object, RDS/H5 file name, matrix/dgCMatrix. List option
+#' can have element types mixed. A liger object have to be of version older than
+#' 1.99. RDS files must contain base dense matrix or dgCMatrix supported by
+#' package "Matrix". H5 files must contain dataset processed by rliger < 1.99.
+#' @param annotations Named factor of all cell type assignments, should be
+#' concatenated from all datasets.
+#' @param filepath Path to analysis directory where output sampling needs to be
+#' stored.
+#' @param analysis.name String identifying the analysis, used to make up a
+#' sub-folder name.
+#' @param datasets.remove Character vector of datasets to be excluded from
+#' sampling if \code{data.list} is a liger object. Named list of dataset names
+#' for exluding datasets in liger objects passed with a list \code{data.list}.
+#' See \code{\link{sample_single_cell}} examples.
+#' @param plot.hist Logical, if to display and save histograms of nUMIs by cell
+#' type
+#' @return Nothing is returned, but the following file will be stored to local:
+#' \itemize{
+#' \item{\code{"<filepath>/<analysis.name>/cell_size_histogram.pdf"} - A PDF
+#' file for the histogram that shows nUMI per cell distribution for each cell
+#' type}
+#' \item{\code{"<filepath>/<analysis.name>/cell_size.RDS"} - RDS file of a
+#' named numeric vector object, total number of counts per cell type across all
+#' datasets.}
+#' }
 #' @export
 calculate_cell_sizes = function(
-    objs,
+    data.list,
     annotations,
     filepath,
     analysis.name,
-    plot.hist = F
+    datasets.remove = NULL,
+    plot.hist = FALSE
 ){
+  objs <- load_objs(data.list, datasets.remove = datasets.remove)
+  # objs = load_objs(objs)
 
-  objs = load_objs(objs)
-
-  size_list = lapply(1:nlevels(annotations),
-                     function(x){vector(mode = "integer")})
+  size_list = lapply(levels(annotations),
+                     function(x) integer(0))
   names(size_list) = levels(annotations)
 
   for(object in objs){
-    for(cell_type in names(size_list)){
-      cells_subset = intersect(colnames(object),
-                               names(annotations)[annotations == cell_type])
-      if(length(cells_subset)>1){
-        size_list[[cell_type]]  = c(size_list[[cell_type]],
-                                    Matrix::colSums(object[,cells_subset]))
-      } else if(length(cells_subset) == 1){
-        size_list[[cell_type]] = c(size_list[[cell_type]],
-                                   sum(object[,cells_subset]))
+    if (inherits(object, "dgCMatrix")) {
+      isec <- intersect(colnames(object), names(annotations))
+      object <- object[, isec, drop = FALSE]
+      ann <- annotations[isec, drop = TRUE]
+      for (ct in levels(ann)) {
+        if (sum(ann == ct) == 0) next
+        size_list[[ct]] <- c(
+          size_list[[ct]],
+          unname(colSums(object[, ann == ct, drop = FALSE]))
+        )
       }
+    } else if (inherits(object, "H5File")) {
+      # Assuming we use 10X data structure
+      # i.e. i - matrix/indices; p - matrix/indptr; x - matrix/data
+      #      colnames - matrix/barcodes; rownames - matrix/features/name
+      i.link <- object[["matrix/indices"]]
+      p.link <- object[["matrix/indptr"]]
+      x.link <- object[["matrix/data"]]
+      barcodes <- object[["matrix/barcodes"]][]
+      ncol <- length(barcodes)
+      nrow <- object[["matrix/features/name"]]$dims
+      nchunk <- ceiling(ncol / chunk)
+      p.start <- NULL
+      p.end <- 1
+      mat.out <- NULL
+      message("Counting for HDF5 data at: ", object$filename)
+      pb <- utils::txtProgressBar(min = 0, max = nchunk, style = 3, file = stderr())
+      for (i in seq_len(nchunk)) {
+        p.start <- p.end
+        p.end <- p.start + chunk
+        if (p.end > (ncol + 1)) p.end <- ncol + 1
+        p.orig <- p.link[p.start:p.end]
+        p.new <- p.orig - p.orig[1]
+        i.new <- i.link[(p.orig[1] + 1):p.orig[length(p.orig)]]
+        x.new <- x.link[(p.orig[1] + 1):p.orig[length(p.orig)]]
+        mat.chunk <- Matrix::sparseMatrix(
+          i = i.new + 1, p = p.new, x = x.new, dims = c(nrow, p.end - p.start)
+        )
+        # idx.orig - The 1-based integer index of cells of the current chunk
+        #            out of the whole dataset
+        idx.orig <- seq(p.start, p.end - 1)
+        isec <- intersect(barcodes[idx.orig], names(annotations))
+        mat.chunk <- mat.chunk[, isec, drop = FALSE]
+        ann <- annotations[isec, drop = TRUE]
+        for (ct in levels(ann)) {
+          if (sum(ann == ct) == 0) next
+          size_list[[ct]] <- c(
+            size_list[[ct]],
+            unname(colSums(mat.chunk[, ann == ct, drop = FALSE]))
+          )
+        }
+        utils::setTxtProgressBar(pb, i)
+      }
+      message()
     }
+    # for(cell_type in names(size_list)){
+    #   cells_subset = intersect(colnames(object),
+    #                            names(annotations)[annotations == cell_type])
+    #   if(length(cells_subset)>1){
+    #     size_list[[cell_type]]  = c(size_list[[cell_type]],
+    #                                 Matrix::colSums(object[,cells_subset]))
+    #   } else if(length(cells_subset) == 1){
+    #     size_list[[cell_type]] = c(size_list[[cell_type]],
+    #                                sum(object[,cells_subset]))
+    #   }
+    # }
   }
   cell_type_mean = sapply(size_list, mean)
 
-  if(plot.hist){
-    pdf(file = file.path(filepath,analysis.name,"cell_size_histogram.pdf"),
+  if (isTRUE(plot.hist)) {
+    pdf(file = file.path(filepath, analysis.name, "cell_size_histogram.pdf"),
         width = 6, height = 4)
-    for(i in 1:length(size_list)){
+    for (i in seq_along(size_list)) {
       hist(size_list[[i]],
-           main = paste0("Distribution of cell sizes for ",names(size_list)[i]),
+           main = paste0("Distribution of cell sizes for ", names(size_list)[i]),
            xlab = "Counts")
       abline(v = cell_type_mean[i], col = "red")
     }
@@ -294,6 +362,50 @@ calculate_cell_sizes = function(
   }
 
   saveRDS(cell_type_mean, file.path(filepath,analysis.name,"cell_size.RDS"))
+}
+
+sum_obj_subset <- function(object, cells, chunk = 1000) {
+  if (inherits(object, "dgCMatrix")) {
+    return(sum(colSums(object[, cells, drop = FALSE])))
+  } else if (inherits(object, "H5File")) {
+    # Assuming we use 10X data structure
+    # i.e. i - matrix/indices; p - matrix/indptr; x - matrix/data
+    #      colnames - matrix/barcodes; rownames - matrix/features/name
+    i.link <- h5file[["matrix/indices"]]
+    p.link <- h5file[["matrix/indptr"]]
+    x.link <- h5file[["matrix/data"]]
+    barcodes <- h5file[["matrix/barcodes"]][]
+    ncol <- length(barcodes)
+    nrow <- h5file[["matrix/features/name"]]$dims
+
+    nchunk <- ceiling(ncol / chunk)
+    p.start <- NULL
+    p.end <- 1
+    mat.out <- NULL
+    pb <- utils::txtProgressBar(min = 0, max = nchunk, style = 3, file = stderr())
+    for (i in seq_len(nchunk)) {
+      p.start <- p.end
+      p.end <- p.start + chunk
+      if (p.end > (ncol + 1)) p.end <- ncol + 1
+      idx.orig <- seq(p.start, p.end - 1)
+      if (any(idx.orig %in% idx)) {
+        p.orig <- p.link[p.start:p.end]
+        p.new <- p.orig - p.orig[1]
+        i.new <- i.link[(p.orig[1] + 1):p.orig[length(p.orig)]]
+        x.new <- x.link[(p.orig[1] + 1):p.orig[length(p.orig)]]
+        mat.chunk <- Matrix::sparseMatrix(
+          i = i.new + 1, p = p.new, x = x.new, dims = c(nrow, p.end - p.start)
+        )
+
+        mat.chunk.sub <- mat.chunk[, idx.orig %in% idx, drop = FALSE]
+        if (is.null(mat.out)) mat.out <- mat.chunk.sub
+        else mat.out <- cbind(mat.out, mat.chunk.sub)
+      }
+      utils::setTxtProgressBar(pb, i)
+    }
+    message()
+    return(mat.out)
+  }
 }
 
 #' select variable genes with the Kruskal-Wallis test
