@@ -247,6 +247,7 @@ qc_spatial_data = function(
 
   coords = coords[colnames(spatial.data),]
 
+  dir_save = file.path(filepath,analysis.name,spatial.data.name,rand.seed)
   dir.create(dir_save)
   message("Created directory at ",dir_save)
 
