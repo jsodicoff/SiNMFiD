@@ -399,7 +399,6 @@ select_defining_genes = function(
 
   objs = readRDS(file.path(filepath,analysis.name,rand.seed,"norm_data.RDS"))
   annotations = readRDS(file.path(filepath,analysis.name,"source_annotations.RDS"))
-  annotations = as.vector(annotations)
 
   message("Selecting genes with the KW test")
 
