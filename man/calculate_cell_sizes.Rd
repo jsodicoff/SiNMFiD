@@ -10,7 +10,8 @@ calculate_cell_sizes(
   filepath,
   analysis.name,
   datasets.remove = NULL,
-  plot.hist = FALSE
+  plot.hist = FALSE,
+  chunk = 1000
 )
 }
 \arguments{
@@ -37,6 +38,9 @@ See \code{\link{sample_single_cell}} examples.}
 
 \item{plot.hist}{Logical, if to display and save histograms of nUMIs by cell
 type}
+
+\item{chunk}{Integer chunk size for processing sparse data stored in H5.
+Number of cells to load into memory per iteration. Default \code{1000}.}
 }
 \value{
 Nothing is returned, but the following file will be stored to local:

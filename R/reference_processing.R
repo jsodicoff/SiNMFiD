@@ -254,6 +254,8 @@ Matrix.column_norm <- function(A) {
 #' See \code{\link{sample_single_cell}} examples.
 #' @param plot.hist Logical, if to display and save histograms of nUMIs by cell
 #' type
+#' @param chunk Integer chunk size for processing sparse data stored in H5.
+#' Number of cells to load into memory per iteration. Default \code{1000}.
 #' @return Nothing is returned, but the following file will be stored to local:
 #' \itemize{
 #' \item{\code{"<filepath>/<analysis.name>/cell_size_histogram.pdf"} - A PDF
@@ -270,7 +272,8 @@ calculate_cell_sizes = function(
     filepath,
     analysis.name,
     datasets.remove = NULL,
-    plot.hist = FALSE
+    plot.hist = FALSE,
+    chunk = 1000
 ){
   objs <- load_objs(data.list, datasets.remove = datasets.remove)
   # objs = load_objs(objs)
@@ -364,49 +367,6 @@ calculate_cell_sizes = function(
   saveRDS(cell_type_mean, file.path(filepath,analysis.name,"cell_size.RDS"))
 }
 
-sum_obj_subset <- function(object, cells, chunk = 1000) {
-  if (inherits(object, "dgCMatrix")) {
-    return(sum(colSums(object[, cells, drop = FALSE])))
-  } else if (inherits(object, "H5File")) {
-    # Assuming we use 10X data structure
-    # i.e. i - matrix/indices; p - matrix/indptr; x - matrix/data
-    #      colnames - matrix/barcodes; rownames - matrix/features/name
-    i.link <- h5file[["matrix/indices"]]
-    p.link <- h5file[["matrix/indptr"]]
-    x.link <- h5file[["matrix/data"]]
-    barcodes <- h5file[["matrix/barcodes"]][]
-    ncol <- length(barcodes)
-    nrow <- h5file[["matrix/features/name"]]$dims
-
-    nchunk <- ceiling(ncol / chunk)
-    p.start <- NULL
-    p.end <- 1
-    mat.out <- NULL
-    pb <- utils::txtProgressBar(min = 0, max = nchunk, style = 3, file = stderr())
-    for (i in seq_len(nchunk)) {
-      p.start <- p.end
-      p.end <- p.start + chunk
-      if (p.end > (ncol + 1)) p.end <- ncol + 1
-      idx.orig <- seq(p.start, p.end - 1)
-      if (any(idx.orig %in% idx)) {
-        p.orig <- p.link[p.start:p.end]
-        p.new <- p.orig - p.orig[1]
-        i.new <- i.link[(p.orig[1] + 1):p.orig[length(p.orig)]]
-        x.new <- x.link[(p.orig[1] + 1):p.orig[length(p.orig)]]
-        mat.chunk <- Matrix::sparseMatrix(
-          i = i.new + 1, p = p.new, x = x.new, dims = c(nrow, p.end - p.start)
-        )
-
-        mat.chunk.sub <- mat.chunk[, idx.orig %in% idx, drop = FALSE]
-        if (is.null(mat.out)) mat.out <- mat.chunk.sub
-        else mat.out <- cbind(mat.out, mat.chunk.sub)
-      }
-      utils::setTxtProgressBar(pb, i)
-    }
-    message()
-    return(mat.out)
-  }
-}
 
 #' select variable genes with the Kruskal-Wallis test
 #'
