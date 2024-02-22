@@ -425,9 +425,12 @@ transform_coords_to_ccf = function(
     ish = T){
 
   deconv_dir = file.path(filepath,analysis.name,spatial.data.name)
-  coords = file.path(deconv_dir, "coords.RDS")
+  coords = readRDS(file.path(deconv_dir, "coords.RDS"))
 
-  scale_factor = if(ish){200}else{25}
+  scale_factor = 25
+  if(ish){
+    scale_factor = 200
+  }
   coords = coords*scale_factor
 
   if(ish){
