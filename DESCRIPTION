@@ -1,10 +1,10 @@
 Package: SiNMFiD
-Title: What the Package Does (One Line, Title Case)
+Title: Supervised iNMF informed Deconvolution
 Version: 0.0.0.9000
 Authors@R: 
-    person("Joshua", "Sodicoff", , "sodicoff@uchicago.edu", role = c("aut", "cre")),
-    person("Yichen", "Wang", , "wayichen@umich.edu", role = "ctb")
-Description: What the package does (one paragraph).
+    c(person("Joshua", "Sodicoff", , "sodicoff@uchicago.edu", role = c("aut", "cre")),
+    person("Yichen", "Wang", , "wayichen@umich.edu", role = "ctb"))
+Description: A package for completing cell type deconvolution on bulk spatial transcriptomic data utilizing multiple reference scRNA-seq datasets.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Language: es
