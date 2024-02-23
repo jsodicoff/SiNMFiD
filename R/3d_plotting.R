@@ -1,4 +1,4 @@
-#' Title
+#' View the distribution of a cell type in an RGL window
 #'
 #' @param filepath Path to analysis directory
 #' @param analysis.name String identifying the analysis
@@ -129,7 +129,7 @@ generate_loading_gifs = function(
 
 }
 
-#' Title
+#' Generate gifs of the 3D distribution of a given label
 #'
 #' @param filepath Path to analysis directory
 #' @param analysis.name String identifying the analysis
@@ -194,17 +194,20 @@ generate_label_gifs = function(
 
 }
 
-#' Title
+#' Plot the 3D distributions of cell types with anatomical subregions overlaid
 #'
-#' @param filepath filepath
-#' @param analysis.name analysis.name
-#' @param spatial.data.name spatial.data.name
-#' @param rand.seed rand.seed
-#' @param mat.use mat.use
-#' @param cell.types.plot cell.types.plot
-#' @param subregions.plot subregions.plot
-#' @param filter filter
-#' @param dims dims
+#' @param filepath Path to analysis directory
+#' @param analysis.name String identifying the analysis
+#' @param spatial.data.name String identifying the spatial sample
+#' @param rand.seed Integer random seed
+#' @param mat.use A string, either "raw" or "proportions"
+#'     referring to what version of the results to summarize
+#' @param cell.types.plot A character vector of cell types to plot
+#' @param subregions.plot A character vector of subregions to plot
+#' @param filter Value for binarizing results, either presence above
+#'     the provided threshold or absence below
+#' @param dims Integer vector of length 2 corresponding to the width and
+#'     height of the RGL window
 #'
 #' @return nothing
 #' @export
