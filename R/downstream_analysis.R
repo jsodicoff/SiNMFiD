@@ -346,7 +346,7 @@ plot_analyze_gene_signatures = function(filepath,
                           cos_sim = as.vector(cos_sim))
   heatmap_plot = ggplot2::ggplot(heatmap_df, ggplot2::aes(x = Cell_Type_1, y = Cell_Type_2, fill = cos_sim)) +
     ggplot2::labs(y = "Cell Types", fill = "", title = "Cosine Similarity for Cell Type Signatures") +
-    ggplot2::theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust=1),
                    axis.title.x = ggplot2::element_blank(),
                    text = ggplot2::element_text(size = 8),
                    axis.text = ggplot2::element_text(size = 5),
@@ -544,7 +544,7 @@ plot_analyze_spatial_correlation = function(filepath,
                                cos_sim = as.vector(corr_sim_dist))
   heatmap_dist_plot = ggplot2::ggplot(heatmap_dist_df, ggplot2::aes(x = Cell_Type_1, y = Cell_Type_2, fill = cos_sim)) +
     ggplot2::labs(y = "Cell Types", fill = "", title = "Correlation for Cell Type Distribution") +
-    ggplot2::theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust=1),
                    axis.title.x = ggplot2::element_blank(),
                    text = ggplot2::element_text(size = 8),
                    axis.text = ggplot2::element_text(size = 5),
@@ -722,7 +722,7 @@ plot_calculate_wasserstein = function(
                                       wasserstein_dist = as.vector(distance_mat))
   heatmap_wasserstein_plot = ggplot2::ggplot(heatmap_wasserstein_df, ggplot2::aes(x = Cell_Type_1, y = Cell_Type_2, fill = wasserstein_dist)) +
     ggplot2::labs(y = "Cell Types", fill = "", title = "Wasserstein Distance by Cell Type and Gene") +
-    ggplot2::theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust=1),
                    axis.title.x = ggplot2::element_blank(),
                    text = ggplot2::element_text(size = 8),
                    axis.text = ggplot2::element_text(size = 5),
