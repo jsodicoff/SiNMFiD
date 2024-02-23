@@ -733,7 +733,7 @@ plot_calculate_wasserstein = function(
     ggplot2::geom_tile() +
     viridis::scale_fill_viridis()
 
-  ggplot2::ggsave(paste0(dir_plots, "/wasserstein_heatmap_",descriptor,".PNG"),
+  ggplot2::ggsave(paste0(dir_plots, "/wasserstein_heatmap.PNG"),
                   heatmap_wasserstein_plot,
                   width = 1500,
                   height = 1200,
