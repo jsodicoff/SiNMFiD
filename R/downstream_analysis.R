@@ -626,27 +626,26 @@ calculate_wasserstein = function(
   loadings = loadings[, colSums(loadings) != 0 & colnames(loadings)!=""]
 
   loadings = loadings[, colSums(loadings) != 0]
-  if(use.cell.types){
-    if(!is.null(cell.types.use)){
-      cell.types.use = intersect(cell.types.use, colnames(loadings))
-    } else {
-      cell.types.use = colnames(loadings)
-    }
-    cell.types.use = cell.types.use[cell.types.use != "" & apply(loadings, MARGIN = 2, function(x){sum(x != 0)}) > min.samples]
-    loadings = loadings[rownames(loadings) %in% rownames(coords), cell.types.use]
-
-    if(is.vector(loadings)){
-      new_loadings = matrix(loadings)
-      rownames(new_loadings) = names(loadings)
-      colnames(new_loadings) = cell.types.use
-      loadings = new_loadings
-      rm(new_loadings)
-    }
-
-    colnames(loadings) = sub("/",".",sub(" ", "_", cell.types.use))
-
-    coords = coords[rownames(loadings),]
+  if(!is.null(cell.types.use)){
+    cell.types.use = intersect(cell.types.use, colnames(loadings))
+  } else {
+    cell.types.use = colnames(loadings)
   }
+  cell.types.use = cell.types.use[cell.types.use != "" & apply(loadings, MARGIN = 2, function(x){sum(x != 0)}) > min.samples]
+  loadings = loadings[rownames(loadings) %in% rownames(coords), cell.types.use]
+  
+  if(is.vector(loadings)){
+    new_loadings = matrix(loadings)
+    rownames(new_loadings) = names(loadings)
+    colnames(new_loadings) = cell.types.use
+    loadings = new_loadings
+    rm(new_loadings)
+  }
+
+  colnames(loadings) = sub("/",".",sub(" ", "_", cell.types.use))
+
+  coords = coords[rownames(loadings),]
+  
 
   if(!is.null(genes.use)){
     exp = t(readRDS(file.path(dir_spatial, "exp_qc.RDS")))
