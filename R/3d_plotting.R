@@ -1,42 +1,3 @@
-#' Routine for loading filepaths relevant to 3d plotting functionality
-#'
-#' @param filepath Path to analysis directory
-#' @param analysis.name String identifying the analysis
-#' @param spatial.data.name String identifying the spatial sample
-#' @param rand.seed Integer random seed
-#'
-#' @return nothing
-#' @export
-three_d_plotting_routine = function(filepath,
-                                    analysis.name,
-                                    spatial.data.name,
-                                    rand.seed){
-  set.seed(rand.seed)
-
-  dir_spatial <<- file.path(filepath,analysis.name,spatial.data.name,rand.seed)
-  dir_output <<- file.path(dir_spatial,"downstream_output")
-
-
-  dir_plots <<- file.path(dir_output,"plots")
-  if(!dir.exists(dir_plots)){
-    dir.create(paste0(dir_plots))
-    message("Created directory at ", dir_plots)
-  }
-  dir_gifs <<- file.path(dir_plots,"gifs")
-  if(!dir.exists(dir_gifs)){
-    dir.create(paste0(dir_gifs))
-    message("Created directory at ", dir_gifs)
-  }
-}
-
-#' Clear relevant paths out of environment
-#'
-#' @return nothing
-#' @export
-three_d_plotting_routine_end = function(){
-  rm(dir_spatial, dir_output, dir_plots, dir_gifs)
-}
-
 #' Title
 #'
 #' @param filepath Path to analysis directory
@@ -64,10 +25,20 @@ view_in_rgl = function(
     filter.samples = NULL,
     dims = c(500, 500)
 ){
-  three_d_plotting_routine(filepath,
-                           analysis.name,
-                           spatial.data.name,
-                           rand.seed)
+  dir_spatial = file.path(filepath,analysis.name,spatial.data.name,rand.seed)
+  dir_output = file.path(dir_spatial,"downstream_output")
+
+
+  dir_plots = file.path(dir_output,"plots")
+  if(!dir.exists(dir_plots)){
+    dir.create(paste0(dir_plots))
+    message("Created directory at ", dir_plots)
+  }
+  dir_gifs = file.path(dir_plots,"gifs")
+  if(!dir.exists(dir_gifs)){
+    dir.create(paste0(dir_gifs))
+    message("Created directory at ", dir_gifs)
+  }
 
   coords = readRDS(file.path(dir_spatial,"coords_qc.RDS"))
   loadings = readRDS(file.path(dir_spatial,"deconvolution_output.RDS"))
@@ -84,8 +55,6 @@ view_in_rgl = function(
   rgl::plot3d(coords[,1],coords[,2],coords[,3],col = colors_view,aspect=c(67,41,58),xlab="Anterior-Posterior",ylab="Inferior-Superior",zlab="Left-Right",size=5, add = TRUE)
   rgl::decorate3d(xlab = colnames(coords)[1], ylab = colnames(coords)[2],zlab = colnames(coords)[3], box = FALSE, axes = FALSE)
   rgl::axes3d(c("x--","y--","z--"))#axes3d(c("x--","y--","z--"))
-
-  three_d_plotting_routine_end()
 }
 
 
@@ -116,10 +85,20 @@ generate_loading_gifs = function(
     filter = NULL,
     dims = c(500, 500)
 ){
-  three_d_plotting_routine(filepath,
-                           analysis.name,
-                           spatial.data.name,
-                           rand.seed)
+  dir_spatial = file.path(filepath,analysis.name,spatial.data.name,rand.seed)
+  dir_output = file.path(dir_spatial,"downstream_output")
+
+
+  dir_plots = file.path(dir_output,"plots")
+  if(!dir.exists(dir_plots)){
+    dir.create(paste0(dir_plots))
+    message("Created directory at ", dir_plots)
+  }
+  dir_gifs = file.path(dir_plots,"gifs")
+  if(!dir.exists(dir_gifs)){
+    dir.create(paste0(dir_gifs))
+    message("Created directory at ", dir_gifs)
+  }
 
   coords = readRDS(file.path(dir_spatial,"coords_qc.RDS"))
   loadings = readRDS(file.path(dir_spatial,"deconvolution_output.RDS"))
@@ -148,7 +127,6 @@ generate_loading_gifs = function(
     rgl::movie3d(rgl::spin3d(axis = c(0, 0, 1)), duration = 20, movie = paste0(dir_gifs,"/",cell_type_consistent,"_spatial_summary_",mat.use))
   }
 
-  three_d_plotting_routine_end()
 }
 
 #' Title
@@ -172,10 +150,20 @@ generate_label_gifs = function(
     dims = c(500, 500)
 ){
 
-  three_d_plotting_routine(filepath,
-                           analysis.name,
-                           spatial.data.name,
-                           rand.seed)
+  dir_spatial = file.path(filepath,analysis.name,spatial.data.name,rand.seed)
+  dir_output = file.path(dir_spatial,"downstream_output")
+
+
+  dir_plots = file.path(dir_output,"plots")
+  if(!dir.exists(dir_plots)){
+    dir.create(paste0(dir_plots))
+    message("Created directory at ", dir_plots)
+  }
+  dir_gifs = file.path(dir_plots,"gifs")
+  if(!dir.exists(dir_gifs)){
+    dir.create(paste0(dir_gifs))
+    message("Created directory at ", dir_gifs)
+  }
 
   coords = readRDS(file.path(dir_spatial,"coords_qc.RDS"))
 
@@ -204,7 +192,6 @@ generate_label_gifs = function(
     rgl::movie3d(rgl::spin3d(axis = c(0, 0, 1)), duration = 20, movie = paste0(dir_gifs, "/",label_unique,"_spatial_summary"))
   }
 
-  three_d_plotting_routine_end()
 }
 
 #' Title
@@ -232,10 +219,20 @@ overlay_subregion_gifs = function(
     filter = NULL,
     dims = c(500, 500)
 ){
-  three_d_plotting_routine(filepath,
-                           analysis.name,
-                           spatial.data.name,
-                           rand.seed)
+  dir_spatial = file.path(filepath,analysis.name,spatial.data.name,rand.seed)
+  dir_output = file.path(dir_spatial,"downstream_output")
+
+
+  dir_plots = file.path(dir_output,"plots")
+  if(!dir.exists(dir_plots)){
+    dir.create(paste0(dir_plots))
+    message("Created directory at ", dir_plots)
+  }
+  dir_gifs <<- file.path(dir_plots,"gifs")
+  if(!dir.exists(dir_gifs)){
+    dir.create(paste0(dir_gifs))
+    message("Created directory at ", dir_gifs)
+  }
 
   coords = readRDS(file.path(dir_spatial,"coords_qc.RDS"))
   loadings = readRDS(file.path(dir_spatial,"deconvolution_output.RDS"))
@@ -276,5 +273,4 @@ overlay_subregion_gifs = function(
     }
   }
 
-  three_d_plotting_routine_end()
 }
