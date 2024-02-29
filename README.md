@@ -11,9 +11,9 @@ To install SiNMFiD in R, run the following command in an R console:
 ```R
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
-devtools::install_github("jsodicoff/SiNMFiD")
+devtools::install_github("welch-lab/SiNMFiD")
 ```
 
 ## Vignette
 
-We have provided a vignette describing how to reproduce and iterate on the results described in "Mesoscale Properties of Molecular Cell Types in the Mouse Brain" by Kriebel et al. (2024) [here](https://github.com/jsodicoff/SiNMFiD/blob/main/vignettes/vignette.html).  
+We have provided a vignette describing how to reproduce and iterate on the results described in "Mesoscale Properties of Molecular Cell Types in the Mouse Brain" by Kriebel et al. (2024) [here](https://github.com/welch-lab/SiNMFiD/blob/main/vignettes/vignette.html).  
