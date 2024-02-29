@@ -1,0 +1,242 @@
+---
+title: "Deconvolving with SiNMFiD"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Deconvolving with SiNMFiD}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+```
+
+In this vignette, we'll be walking through some of the core functionality of the `SiNMFiD` package, as implemented for "Mesoscale Properties of Molecular Cell Types in the Mouse Brain" by Kriebel et al. (2024). First, let's install the package from Github.
+
+```{r, eval = F}
+devtools::install_github("jsodicoff/SiNMFiD")
+```
+
+Let's set some of the basic parameters for our analysis, namely the directory in which we'd like to build our analysis, a name to identify it by (here, corresponding to a brain region of interest), and a spatial modality to associate with it. `SiNMFiD` also allows for labeling of replicate analyses by their associated random seed.
+
+```{r setup, include = TRUE}
+library(SiNMFiD)
+filepath = "sinmfid"
+analysis_name = "MOp"
+spatial_data_name = "ISH"
+rand_seed = 123
+```
+
+## Starting an analysis
+
+With this information, we can initiate an analysis. `start_analysis` constructs the root of the directory structure that will store derived data and results.
+
+```{r}
+start_analysis(filepath, analysis_name)
+```
+
+To add a spatial modality to the analysis, we call `save_spatial_data`. It requires filepaths for the expression data and coordinates in addition to identifying information for the analysis. In this vignette, we will be working with quantified in situ hybridization data from the Allen Brain Atlas.
+
+```{r}
+save_spatial_data(filepath,
+                  analysis_name,
+                  "sinmfid/exp.RDS",
+                  "sinmfid/coords.RDS",
+                  spatial_data_name)
+```
+
+## Manipulating spatial data
+
+`SiNMFiD` provides several tools for manipulating spatial data before it is deconvolved. To assess what we're working with, we can call the `reference_3d_coordinates` function to plot silhouettes of the region volume on three perpendicular planes.
+
+```{r}
+reference_3d_coordinates(filepath,
+                         analysis_name,
+                         spatial_data_name,
+                         save.plots = T)
+```
+
+We notice that the scaling of the coordinates is not similar to what is expected for data in the Allen Common Coordinate framework, a standard in neuroscience research. Luckily, we have a helper function `transform_coords_to_ccf` written to scale and shift our specific data to align. This creates a new spatial modality, named after our original with `_ccf` appended.
+
+```{r}
+transform_coords_to_ccf(filepath,
+                        analysis_name,
+                        spatial_data_name)
+```
+
+We know that only one of the hemispheres of the brain is densely covered in the quantified ISH dataset. We can use the `subset_spatial_data` to create an object with only those samples. Understanding the `subset_specs` parameter of `subset_spatial_data` function is essential for proper usage. The elements of the list correspond to sequential axes in the data, with the first element of those vectors corresponding to the lower bound and the second to the upper bound, where `NaN` implies there is not a limit. This function also creates a new spatial modality, here appended from our previous with `_subset_` followed by the number of samples included after subsetting.
+
+```{r}
+spatial_data_name = "ISH_ccf"
+subset_spatial_data(filepath,
+                    analysis_name,
+                    spatial_data_name,
+                    subset.specs = list(c(NaN,NaN),
+                         c(NaN,NaN),
+                         c(8000,NaN)))
+```
+Let's check out the silhouttes again to confirm that our operations were successful.
+
+```{r, message=FALSE}
+spatial_data_name= "ISH_ccf_subset_927"
+reference_3d_coordinates(filepath,
+                         analysis_name,
+                         spatial_data_name,
+                         save.plots = T)
+```
+
+## Preparing reference data
+
+Before we can deconvolve our spatial data, we will need to process our references. Here, I will be providing a vector of H5 files as input, though `rliger` objects and lists of sparse matrices are also valid as input. I will also be supplying annotations generated for the aformentioned publication.
+
+```{r}
+data_path = "MOp"
+data = file.path(data_path,c("Analysis2_MOp/MOp_sc10Xv2_qc.H5",
+                           "Analysis2_MOp/MOp_sc10Xv3_qc.H5",
+                           "Analysis2_MOp/MOp_sn10Xv3_qc.H5",
+                           "Analysis4_MOp/MOp_sc10Xv2_qc.H5",
+                           "Analysis4_MOp/MOp_sc10Xv3_qc.H5",
+                           "Analysis4_MOp/MOp_sn10Xv3_qc.H5",
+                           "Analysis4_MOp/MOp_smartseq_qc.H5",
+                           "Analysis5_MOp/MOp_sc10Xv2_qc.H5",
+                           "Analysis5_MOp/MOp_sc10Xv3_qc.H5",
+                           "Analysis5_MOp/MOp_sn10Xv3_qc.H5",
+                           "Analysis5_MOp/MOp_smartseq_qc.H5"))
+         
+annotations = readRDS(file.path(filepath,"/clusters.RDS"))
+```
+
+First, we have to downsample our data to get equal coverage of cell types with `sample_single_cell`. The most important parameter is `n.cells`. Too high of a value will result in poor identification of rare cell types and slow calculation whereas too low will not allow for accurate calculation of cell type features.
+
+```{r}
+sample_single_cell(data,
+                   annotations,
+                   filepath,
+                   analysis_name,
+                   n.cells = 500,
+                   rand.seed = rand_seed)
+```
+
+We should also run `calculate_cell_sizes` to estimate the expected number of reads by cell type, important for correction of expected cell type proportions later on. There is also an optional `plot.hist` parameter which generates histograms of reads for each type as a pdf. This is the last step which references the original data. 
+
+```{r}
+calculate_cell_sizes(data, annotations,
+                     filepath,
+                     analysis_name)
+```
+
+From here, we can select variable genes with the Kruskal Wallis test. The most important parameter here
+ is `deconv.gene.num`, controlling the number of genes to use downstream. It is ideal to get a set of genes that is both robust but also primarily represents variation in expression between cell types.
+ 
+```{r, warning=FALSE}
+select_defining_genes(filepath,
+                      analysis_name,
+                      deconv.gene.num = 1000,
+                      gene.num.tol = 10,
+                      rand.seed = rand_seed)
+```
+
+Our final step before we get to the heart of the deconvolution pipeline itself is quality control of the spatial data. For ISH data, voxels with a number of missing genes `z` above the mean (here, `z=1`) are removed and the genes are subset to those used selected above.
+
+```{r}
+qc_spatial_data(filepath,
+                analysis_name,
+                spatial_data_name,
+                rand.seed = rand_seed)
+```
+
+## Running the deconvolution
+
+With out data organized and processed, we call `learn_gene_signatures` to calculate shared and dataset-specific matrices representing gene expression by cell type.
+
+```{r, message=FALSE}
+learn_gene_signatures(filepath,
+                      analysis_name,
+                      spatial_data_name,
+                      rand.seed = rand_seed)
+
+```
+
+Finally, we can call `deconvolve_spatial` to complete an NNLS regression on the spatial data by the shared gene signature matrix scaled by cell size.
+
+```{r}
+deconvolve_spatial(filepath,
+                      analysis_name,
+                      spatial_data_name,
+                      rand.seed = rand_seed)
+```
+
+## View results in 3D
+
+We're going to need a list of the clusters used in the analysis to determine exactly which to inspect. `summarize_clusters` returns a frequency table from which we can extract names.  
+
+```{r}
+summarize_clusters(filepath,
+                   analysis_name)
+```
+
+With a cell type of interest, here `L2/3 IT` excitatory neurons, we can directly view cell type loading in space with `view_in_rgl`, which opens an interactive window with our data.
+
+```{r}
+view_in_rgl(filepath,
+    analysis_name,
+    spatial_data_name,
+    rand.seed = rand_seed,
+    "L2/3 IT")
+```
+
+We can generate gifs summarizing the distribution over the 3D volume with the `generate_loading_gifs` function. Here, I'm providing it with a list of excitatory neuron types to plot. They save in the `downstream_output/plots` directory of the analysis run-specific folder.
+
+```{r, eval=FALSE}
+generate_loading_gifs(filepath,
+                      analysis_name,
+                      spatial_data_name,
+                      rand.seed = rand_seed,
+                      cell.types.plot = c("L2/3 IT", "L4/5 IT", "L5 ET",
+                                          "L5 IT", "L5 NP", "L5 PT",
+                                          "L6 CT","L6 IT","L6b"))
+```
+
+## Derived data
+
+The data generated over the analysis can be more directly quantified through several methods. The `analyze_gene_signatures` function calculates the cosine similarity between gene signatures, yielding a matrix of similarities between cell types. Its `plot` utility returns a heatmap of correlations and a dendrogram of cell type relationships -- this robustly recapitulates known cell type hierarchies and can be used for refining call type annotations.
+
+```{r}
+analyze_gene_signatures(filepath,
+                      analysis_name,
+                      spatial_data_name)
+
+plot_analyze_gene_signatures(filepath,
+                      analysis_name,
+                      spatial_data_name)
+```
+
+`analyze_spatial_correlation` and its `plot` utility provide similar functionality, instead calculating the Pearson correlation between derived cell type distributions. This can be interpreted as a metric of cell type co-occurrence.
+
+```{r}
+analyze_spatial_correlation(filepath,
+                      analysis_name,
+                      spatial_data_name)
+
+plot_analyze_spatial_correlation(filepath,
+                      analysis_name,
+                      spatial_data_name)
+```
+
+`calculate_wasserstein` finds the Wasserstein distance (sometimes call the Earth Mover's distance) between cell type distributions. Think of this as the energy required to shift one distribution to the location of the other. This better quantifies distance between layers or regions specific to a cell type.
+
+```{r}
+calculate_wasserstein(filepath,
+                      analysis_name,
+                      spatial_data_name)
+
+plot_calculate_wasserstein(filepath,
+                      analysis_name,
+                      spatial_data_name)
+```
+
+This does not account for all of the functionality of the `SiNMFiD` package! Additional vignettes should be expected with more information on how to manipulate plotting, preprocess spatial data, and optimize analyses more generally.
