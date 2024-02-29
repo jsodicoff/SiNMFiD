@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 In this vignette, we'll be walking through some of the core functionality of the `SiNMFiD` package, as implemented for "Mesoscale Properties of Molecular Cell Types in the Mouse Brain" by Kriebel et al. (2024). First, let's install the package from Github.
 
 ```{r, eval = F}
-devtools::install_github("jsodicoff/SiNMFiD")
+devtools::install_github("welch-lab/SiNMFiD")
 ```
 
 Let's set some of the basic parameters for our analysis, namely the directory in which we'd like to build our analysis, a name to identify it by (here, corresponding to a brain region of interest), and a spatial modality to associate with it. `SiNMFiD` also allows for labeling of replicate analyses by their associated random seed.
