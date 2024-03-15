@@ -22,7 +22,8 @@ Imports:
     rliger,
     transport,
     viridis,
-    utils
+    utils,
+    lsa
 Suggests: 
     cocoframer,
     knitr,
